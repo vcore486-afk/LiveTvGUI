@@ -1,0 +1,10 @@
+/build/*
+/.qmake.stash
+/Makefile
+/LiveTvGUI
+/.qtcreator/*
+/main.o
+/mainwindow.o
+/moc_mainwindow.o
+/ui_mainwindow.h
+/moc_mainwindow.cpp
