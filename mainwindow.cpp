@@ -4,6 +4,7 @@
 #include <QNetworkReply>
 #include <QRegularExpression>
 #include <QDebug>
+#include <QDesktopServices>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,6 +12,12 @@ MainWindow::MainWindow(QWidget *parent)
     , manager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
+
+    // ВАЖНО: настройка QTextEdit для кликабельных ссылок
+    ui->textEdit->setOpenExternalLinks(false);
+    ui->textEdit->setOpenLinks(false);
+connect(ui->textEdit, &QTextBrowser::anchorClicked, this, &MainWindow::onLinkClicked);
+//                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^ — исправлено!
 }
 
 MainWindow::~MainWindow()
@@ -31,17 +38,16 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1)
 void MainWindow::on_pushButton_clicked()
 {
     if (currentUrl.isEmpty()) {
-        ui->textEdit->setPlainText("URL пустой!");
+        ui->textEdit->setHtml("<p><b>URL пустой!</b></p>");
         return;
     }
 
-    // Создаём запрос
     QNetworkRequest request{QUrl(currentUrl)};
-
     QNetworkReply *reply = manager->get(request);
-    connect(reply, &QNetworkReply::finished, [=]() {
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
-            ui->textEdit->setPlainText("Ошибка загрузки страницы: " + reply->errorString());
+            ui->textEdit->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
             reply->deleteLater();
             return;
         }
@@ -59,17 +65,26 @@ void MainWindow::on_pushButton_clicked()
         }
         results.removeDuplicates();
 
-        // Выводим результат или сообщение, если ничего не найдено
         if (results.isEmpty()) {
-            ui->textEdit->setPlainText("Ссылок cdn.livetv869.me/webplayer.php и webplayer2.php не найдено.");
+            ui->textEdit->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
         } else {
-            ui->textEdit->setPlainText(results.join("\n"));
+            QString htmlOutput;
+            for (const QString &link : results) {
+                QString fullUrl = link.startsWith("http") ? link : "https://" + link;
+                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
+            }
+            ui->textEdit->setHtml(htmlOutput);
         }
     });
 }
 
 
-
+void MainWindow::onLinkClicked(const QUrl &url)
+{
+    if (url.isValid()) {
+        QDesktopServices::openUrl(url);
+    }
+}
 
 
 void MainWindow::on_pushButton_clearurl_clicked()
