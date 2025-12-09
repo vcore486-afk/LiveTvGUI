@@ -9,3 +9,4 @@
 /ui_mainwindow.h
 /moc_mainwindow.cpp
 /.qtcreator/LiveTvGUI.pro.user
+/moc_predefs.h
