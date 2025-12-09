@@ -5,6 +5,7 @@
 #include <QRegularExpression>
 #include <QDebug>
 #include <QDesktopServices>
+#include "playerwindow.h"    // ← ЭТО САМОЕ ГЛАВНОЕ!
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -81,9 +82,16 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::onLinkClicked(const QUrl &url)
 {
-    if (url.isValid()) {
-        QDesktopServices::openUrl(url);
+    if (!url.isValid() || url.isEmpty()) {
+        return;
     }
+
+    // Создаём и показываем встроенный плеер
+    PlayerWindow *player = new PlayerWindow(url, this);
+    player->setAttribute(Qt::WA_DeleteOnClose); // автоудаление при закрытии
+    player->show();
+
+    qDebug() << "Открыт встроенный плеер:" << url.toString();
 }
 
 

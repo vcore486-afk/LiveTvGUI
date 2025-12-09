@@ -10,3 +10,10 @@
 /moc_mainwindow.cpp
 /.qtcreator/LiveTvGUI.pro.user
 /moc_predefs.h
+/moc_playerwindow.cpp
+/moc_playerwindow.o
+/playerwindow.cpp
+/playerwindow.h
+/playerwindow.o
+/playerwindow.ui
+/ui_playerwindow.h
