@@ -20,7 +20,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_clicked();
+
     void on_lineEdit_textChanged(const QString &arg1);
 
     void on_pushButton_clearurl_clicked();
@@ -34,6 +34,8 @@ private slots:
     void on_playurl_clicked();
 
     void on_pushButton_2_clicked();
+
+    void on_geturlpushButton_clicked();
 
 private:
     Ui::MainWindow *ui;
