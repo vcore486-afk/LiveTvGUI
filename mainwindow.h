@@ -39,6 +39,8 @@ private slots:
     void processEvents(const QString &tournamentName);   // Прототип нового метода
     void on_parserel_clicked();
 
+    void on_parseruefa_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;

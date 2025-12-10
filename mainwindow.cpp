@@ -374,3 +374,9 @@ void MainWindow::on_parserel_clicked()
  processEvents("Лига Европы"); // Передача нужного турнира
 }
 
+
+void MainWindow::on_parseruefa_clicked()
+{
+   processEvents("Лига Конференций");
+}
+
