@@ -360,3 +360,45 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
     });
 
 }
+
+void MainWindow::on_parserel_clicked()
+{
+    callPythonScript();
+
+    // Сначала вызываем Python-функцию
+    PythonManager::instance().callFunction("find_events", "main");
+
+    // Получение пути к домашней директории и создание пути к папке .livetv
+    QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    QString filePath = homePath + "/.livetv/events.txt";
+
+    // Чтение содержимого скрипта
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        std::cerr << "Файл не открыт" << std::endl;
+        return;
+    }
+
+    QTextStream stream(&file);
+    QString htmlContent;
+
+    // Читаем файл построчно и формируем HTML-разметку
+    while (!stream.atEnd()) {
+        QString line = stream.readLine();
+        QStringList parts = line.split('\t');  // Разделение по табуляции
+
+        if (parts.size() == 2) {
+            QString title = parts[0].trimmed();
+            QString href = parts[1].trimmed();
+
+            // Добавляем строку в HTML с кликабельной ссылкой
+            htmlContent += QString("<p><strong>%1</strong> (<a href='%2'>перейти</a>)</p>\n").arg(title, href);
+        }
+    }
+
+    file.close();
+
+    // Устанавливаем HTML-разметку в виджет
+    ui->textBrowser->setHtml(htmlContent);
+}
+

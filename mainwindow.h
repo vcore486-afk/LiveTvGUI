@@ -37,6 +37,8 @@ private slots:
 
     void on_geturlpushButton_clicked();
 
+    void on_parserel_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;
