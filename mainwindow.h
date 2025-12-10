@@ -36,7 +36,7 @@ private slots:
     void on_pushButton_2_clicked();
 
     void on_geturlpushButton_clicked();
-
+    void processEvents(const QString &tournamentName);   // Прототип нового метода
     void on_parserel_clicked();
 
 private:
