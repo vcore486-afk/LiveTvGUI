@@ -26,7 +26,7 @@ private slots:
     void on_pushButton_clearurl_clicked();
     void onLinkClicked(const QUrl &url);
     void onLinkHovered(const QString &link);
-
+    void geturlpushButton(const QUrl &url); // Аргумент QUrl
     void on_urlField_textEdited(const QString &arg1);
 
     bool eventFilter(QObject *obj, QEvent *event) override;

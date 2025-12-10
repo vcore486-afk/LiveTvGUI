@@ -26,8 +26,8 @@ MainWindow::MainWindow(QWidget *parent)
     // ВАЖНО: настройка QTextEdit для кликабельных ссылок
     ui->textBrowser->setOpenExternalLinks(false);
     ui->textBrowser->setOpenLinks(false);
-    connect(ui->textBrowser, &QTextBrowser::anchorClicked, this, &MainWindow::onLinkClicked);
-    ui->textBrowser->installEventFilter(this);
+  connect(ui->textBrowser, &QTextBrowser::anchorClicked, this, &MainWindow::geturlpushButton);
+  connect(ui->textBrowserEvents, &QTextBrowser::anchorClicked, this, &MainWindow::onLinkClicked);
 }
 
 MainWindow::~MainWindow()
@@ -315,3 +315,48 @@ void MainWindow::on_geturlpushButton_clicked()
 
 }
 
+//функция получения m3u8 ссылок через ссылки в поле тектсбраузера
+void MainWindow::geturlpushButton(const QUrl &currentUrl)
+{
+    qDebug() << "Навели на ссылку:" << currentUrl.toString(); // Используем toString(), чтобы получить строку
+    if (currentUrl.isEmpty()) {
+        ui->textBrowserEvents->setHtml("<p><b>URL пустой!</b></p>");
+        return;
+    }
+
+    QNetworkRequest request{QUrl(currentUrl)};
+    QNetworkReply *reply = manager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            ui->textBrowserEvents->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
+            reply->deleteLater();
+            return;
+        }
+
+        QString html = reply->readAll();
+        reply->deleteLater();
+
+        // Регулярное выражение для поиска ссылок webplayer и webplayer2
+        QRegularExpression re(R"(cdn\.livetv869\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        QRegularExpressionMatchIterator it = re.globalMatch(html);
+
+        QStringList results;
+        while (it.hasNext()) {
+            results << it.next().captured(0);
+        }
+        results.removeDuplicates();
+
+        if (results.isEmpty()) {
+            ui->textBrowserEvents->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+        } else {
+            QString htmlOutput;
+            for (const QString &link : results) {
+                QString fullUrl = link.startsWith("http") ? link : "https://" + link;
+                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
+            }
+            ui->textBrowserEvents->setHtml(htmlOutput);
+        }
+    });
+
+}
