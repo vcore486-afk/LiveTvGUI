@@ -27,6 +27,10 @@ private slots:
     void onLinkClicked(const QUrl &url);
 
 
+    void on_urlField_textEdited(const QString &arg1);
+
+   
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;

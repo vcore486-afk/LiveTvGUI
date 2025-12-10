@@ -72,6 +72,9 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         if (m_mpvLaunched || !url.contains(".m3u8")) return;
         m_mpvLaunched = true;
 
+          // Отправляем сигнал с захваченным URL
+        emit urlCaptured(url); // посылаем URL назад в MainWindow
+
         qDebug().noquote() << "ЗАПУСКАЕМ MPV →" << url;
 
         QString mpvPath = QStandardPaths::findExecutable("mpv");

@@ -16,6 +16,10 @@ public:
     explicit PlayerWindow(const QUrl &url, QWidget *parent = nullptr);
     ~PlayerWindow();
 
+signals:
+    void urlCaptured(const QString &url); // Сигнал для передачи URL обратно в MainWindow
+
+
 private:
     Ui::PlayerWindow *ui;
     QWebEngineView *webView = nullptr;

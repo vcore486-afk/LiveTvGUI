@@ -90,7 +90,7 @@ void MainWindow::onLinkClicked(const QUrl &url)
     PlayerWindow *player = new PlayerWindow(url, this);
     player->setAttribute(Qt::WA_DeleteOnClose); // автоудаление при закрытии
     player->show();
-
+    connect(player, &PlayerWindow::urlCaptured, this, &MainWindow::on_urlField_textEdited);
     qDebug() << "Открыт встроенный плеер:" << url.toString();
 }
 
@@ -105,4 +105,18 @@ void MainWindow::on_pushButton_clearurl_clicked()
 }
 
 
+
+
+
+
+void MainWindow::on_urlField_textEdited(const QString &arg1)
+{
+
+    // Устанавливаем полученный URL в urlField
+    ui->urlField->setText(arg1);
+
+    // Можно добавить дополнительную логику, например, обновление интерфейса
+    qDebug() << "Установлен URL в urlField:" << arg1;
+
+}
 
