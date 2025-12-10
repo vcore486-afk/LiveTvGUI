@@ -1,6 +1,6 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-    <qresource>
-        <file>stream-detector.js</file>
-    </qresource>
+<RCC>
+  <qresource>
+    <file>livetv.png</file>
+    <file>stream-detector.js</file>
+  </qresource>
 </RCC>
