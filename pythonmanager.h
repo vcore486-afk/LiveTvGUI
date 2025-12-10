@@ -10,7 +10,7 @@ public:
     static PythonManager& instance();
 
     bool importModule(const char* name);
-    QString callFunction(const char* module, const char* function);
+    QString callFunction(const char* module, const char* function, const char* argument);
 
 private:
     PythonManager();

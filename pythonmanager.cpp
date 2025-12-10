@@ -46,7 +46,7 @@ bool PythonManager::importModule(const char* name) {
     return true;
 }
 
-QString PythonManager::callFunction(const char* module, const char* function)
+QString PythonManager::callFunction(const char* module, const char* function, const char* argument)
 {
     PyObject* pName = PyUnicode_FromString(module);
     PyObject* pModule = PyImport_Import(pName);
@@ -67,7 +67,12 @@ QString PythonManager::callFunction(const char* module, const char* function)
         return "Функция не найдена или не вызываемая";
     }
 
-    PyObject* pResult = PyObject_CallObject(pFunc, NULL);
+    // Создаем объект с аргументом для Python
+    PyObject* pyArgs = Py_BuildValue("(s)", argument);
+
+    // Вызываем функцию с аргументами
+    PyObject* pResult = PyObject_CallObject(pFunc, pyArgs);
+    Py_DECREF(pyArgs);
     Py_DECREF(pFunc);
     Py_DECREF(pModule);
 
@@ -77,11 +82,7 @@ QString PythonManager::callFunction(const char* module, const char* function)
         return "Ошибка выполнения функции";
     }
 
-    // Начало блока добавления диагностики
-    // Распечатываем тип и полное представление объекта
-    qDebug() << "Тип объекта:" << Py_TYPE(pResult)->tp_name;
-    qDebug() << "Объект:" << PyObject_Repr(pResult);
-
+    // Проверяем тип возвращенного значения
     if (PyUnicode_Check(pResult)) {
         QString result = QString::fromUtf8(PyUnicode_AsUTF8(pResult));
         Py_DECREF(pResult);
@@ -90,5 +91,4 @@ QString PythonManager::callFunction(const char* module, const char* function)
         Py_DECREF(pResult);
         return "Возвращенное значение не является строкой!";
     }
-    // Конец блока добавления диагностики
 }

@@ -190,8 +190,8 @@ void MainWindow::on_pushButton_2_clicked()
      callPythonScript();
 
     // Сначала вызываем Python-функцию
-    PythonManager::instance().callFunction("find_events", "main");
-
+   
+PythonManager::instance().callFunction("find_events", "main", "Лига Чемпионов");
     // Получение пути к домашней директории и создание пути к папке .livetv
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString filePath = homePath + "/.livetv/events.txt";
@@ -366,8 +366,8 @@ void MainWindow::on_parserel_clicked()
     callPythonScript();
 
     // Сначала вызываем Python-функцию
-    PythonManager::instance().callFunction("find_events", "main");
 
+PythonManager::instance().callFunction("find_events", "main", "Лига Европы");
     // Получение пути к домашней директории и создание пути к папке .livetv
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString filePath = homePath + "/.livetv/events.txt";

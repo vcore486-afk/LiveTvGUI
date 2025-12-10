@@ -1,5 +1,4 @@
 import requests
-import argparse
 from pathlib import Path
 from bs4 import BeautifulSoup
 
@@ -42,14 +41,8 @@ def save_to_file(events, filename="events.txt"):
     except IOError as e:
         print(f"Ошибка при сохранении файла: {e}")
 
-def main():
-    parser = argparse.ArgumentParser(description='Скрипт для поиска событий по названию турнира.')
-    parser.add_argument('--tournament', required=True, help='Название турнира (например, "Лига Чемпионов").')
-    args = parser.parse_args()
-
+def main(tournament_name):
     url = "https://livetv869.me/allupcomingsports/1"
-    tournament_name = args.tournament
-
     related_events = find_related_events(url, tournament_name)
 
     if related_events:
@@ -63,4 +56,5 @@ def main():
         print("Нет событий, связанных с указанным турниром.")
 
 if __name__ == "__main__":
-    main()
+    # Запускаем основную функцию с передачей первого аргумента
+    main("Лига Европы")
