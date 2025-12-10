@@ -187,10 +187,14 @@ void MainWindow::on_pushButton_2_clicked()
     // Сначала вызываем Python-функцию
     PythonManager::instance().callFunction("find_events", "main");
 
-    // Читаем результат из файла events.txt
-    QFile file("events.txt");
+    // Получение пути к домашней директории и создание пути к папке .livetv
+    QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    QString filePath = homePath + "/.livetv/events.txt";
+
+    // Чтение содержимого скрипта
+    QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qCritical() << "Файл не открыт!";
+        std::cerr << "Файл не открыт" << std::endl;
         return;
     }
 

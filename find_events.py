@@ -1,4 +1,6 @@
 import requests
+import os
+from pathlib import Path
 from bs4 import BeautifulSoup
 
 def find_related_events(url, img_pattern):
@@ -27,11 +29,23 @@ def find_related_events(url, img_pattern):
 
 def save_to_file(events, filename="events.txt"):
     """Сохраняет события в указанный файл."""
+    # Получение пути к домашней директории пользователя
+    home_dir = Path.home()
+    
+    # Создание пути к папке .livetv
+    livetv_dir = home_dir / ".livetv"
+    
+    # Создание папки .livetv, если она не существует
+    livetv_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Полный путь к файлу events.txt
+    file_path = livetv_dir / filename
+    
     try:
-        with open(filename, "w", encoding="utf-8") as file:
+        with open(file_path, "w", encoding="utf-8") as file:
             for title, href in events:
                 file.write(f"{title}\t{href}\n")
-        print(f"События успешно сохранены в файл {filename}.")
+        print(f"События успешно сохранены в файл {file_path}.")
     except IOError as e:
         print(f"Ошибка при сохранении файла: {e}")
 
