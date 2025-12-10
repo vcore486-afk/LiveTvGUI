@@ -67,7 +67,7 @@
      <string>очистить url</string>
     </property>
    </widget>
-   <widget class="QTextBrowser" name="textEdit">
+   <widget class="QTextBrowser" name="textBrowser">
     <property name="geometry">
      <rect>
       <x>70</x>

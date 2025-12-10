@@ -11,7 +11,7 @@ def find_related_events(url, img_pattern):
     events = []  # Список для хранения собранных событий
 
     # Находим все изображения с нужным альт-текстом
-    images = soup.find_all('img', attrs={'alt': 'Юношеская лига УЕФА', 'src': '//cdn.livetv869.me/img/icons/uefay.gif'})
+    images = soup.find_all('img', attrs={'alt': 'Лига Чемпионов', 'src': '//cdn.livetv869.me/img/icons/cleag.gif'})
 
     for image in images:
         # Переходим к ближайшему родителю, содержащему событие

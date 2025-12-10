@@ -25,13 +25,13 @@ private slots:
 
     void on_pushButton_clearurl_clicked();
     void onLinkClicked(const QUrl &url);
-
+    void onLinkHovered(const QString &link);
 
     void on_urlField_textEdited(const QString &arg1);
 
-
-
+    bool eventFilter(QObject *obj, QEvent *event) override;
     void on_playurl_clicked();
+    void getplayerurl(const QString &url);
 
     void on_pushButton_2_clicked();
 

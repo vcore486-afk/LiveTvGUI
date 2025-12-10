@@ -14,6 +14,7 @@
 #include <iostream>
 #include <QDir>
 #include <QStandardPaths>
+#include <QHelpEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,10 +24,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     // ВАЖНО: настройка QTextEdit для кликабельных ссылок
-    ui->textEdit->setOpenExternalLinks(false);
-    ui->textEdit->setOpenLinks(false);
-connect(ui->textEdit, &QTextBrowser::anchorClicked, this, &MainWindow::onLinkClicked);
-//                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^ — исправлено!
+    ui->textBrowser->setOpenExternalLinks(false);
+    ui->textBrowser->setOpenLinks(false);
+    connect(ui->textBrowser, &QTextBrowser::anchorClicked, this, &MainWindow::onLinkClicked);
+    ui->textBrowser->installEventFilter(this);
 }
 
 MainWindow::~MainWindow()
@@ -49,6 +50,9 @@ void MainWindow::on_lineEdit_textChanged(const QString &arg1)
 
 void MainWindow::onLinkClicked(const QUrl &url)
 {
+
+qDebug() << "исполняется onLinkClicked функция " << currentUrl;
+
     if (!url.isValid() || url.isEmpty()) {
         return;
     }
@@ -80,6 +84,46 @@ void MainWindow::on_urlField_textEdited(const QString &arg1)
     // Можно добавить дополнительную логику, например, обновление интерфейса
     qDebug() << "Установлен URL в urlField:" << arg1;
 
+}
+
+// Обработчик событий (для фильтрации наведения на ссылки)
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->textBrowser && event->type() == QEvent::HoverMove) {
+        QHelpEvent *helpEvent = static_cast<QHelpEvent*>(event);
+        QTextCursor cursor = ui->textBrowser->cursorForPosition(helpEvent->pos());
+        QTextCharFormat format = cursor.charFormat();
+
+        qDebug() << "Тип формата:" << format.isAnchor(); // дополнительно выведем статус формата
+
+        if (format.isAnchor()) {
+            QString link = format.anchorHref();
+            qDebug() << "[HOVER] Наведение на ссылку:" << link;
+        }
+    }
+    return QObject::eventFilter(obj, event);
+}
+
+
+//анализатор ссылки ,если eventinfo вызывается функция getplayerurl
+// Метод реакции на наведение на ссылку
+void MainWindow::onLinkHovered(const QString &link)
+{
+    if (link.isEmpty())
+        return;
+
+    qDebug() << "[HOVER] Наведение на ссылку:" << link;
+
+    if (link.contains("eventinfo", Qt::CaseInsensitive)) {
+        qDebug() << "[HOVER] eventinfo обнаружен — вызываем getplayer()";
+
+        // Ограничиваем частоту вызовов
+        static QString lastCalled;
+        if (lastCalled != link) {
+            lastCalled = link;
+            getplayerurl(link);
+        }
+    }
 }
 
 
@@ -120,7 +164,7 @@ void callPythonScript() {
 
     // Чтение содержимого скрипта
     QByteArray scriptContent = QByteArray::fromRawData(reinterpret_cast<const char*>(resource.data()), resource.size());
-    const char* script = scriptContent.constData();
+
 
    // Получение пути к домашнему каталогу и создание пути к папке livetv
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
@@ -179,24 +223,21 @@ void MainWindow::on_pushButton_2_clicked()
     file.close();
 
     // Устанавливаем HTML-разметку в виджет
-    ui->textEdit->setHtml(htmlContent);
+    ui->textBrowser->setHtml(htmlContent);
 }
 
-//функция получения m3u8 ссылок
-void MainWindow::on_geturlpushButton_clicked()
+
+//получение ссылок на плееры 
+void MainWindow::getplayerurl(const QString &currentUrl)
 {
 
-    if (currentUrl.isEmpty()) {
-        ui->textEdit->setHtml("<p><b>URL пустой!</b></p>");
-        return;
-    }
-
-    QNetworkRequest request{QUrl(currentUrl)};
+qDebug() << "исполняется getplayerurl функция " << currentUrl;
+   QNetworkRequest request{QUrl(currentUrl)};
     QNetworkReply *reply = manager->get(request);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
-            ui->textEdit->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
+            ui->textBrowser->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
             reply->deleteLater();
             return;
         }
@@ -215,14 +256,60 @@ void MainWindow::on_geturlpushButton_clicked()
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textEdit->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
         } else {
             QString htmlOutput;
             for (const QString &link : results) {
                 QString fullUrl = link.startsWith("http") ? link : "https://" + link;
                 htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
             }
-            ui->textEdit->setHtml(htmlOutput);
+            ui->textBrowser->setHtml(htmlOutput);
+        }
+    });
+}
+
+
+//функция получения m3u8 ссылок
+void MainWindow::on_geturlpushButton_clicked()
+{
+
+    if (currentUrl.isEmpty()) {
+        ui->textBrowser->setHtml("<p><b>URL пустой!</b></p>");
+        return;
+    }
+
+    QNetworkRequest request{QUrl(currentUrl)};
+    QNetworkReply *reply = manager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            ui->textBrowser->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
+            reply->deleteLater();
+            return;
+        }
+
+        QString html = reply->readAll();
+        reply->deleteLater();
+
+        // Регулярное выражение для поиска ссылок webplayer и webplayer2
+        QRegularExpression re(R"(cdn\.livetv869\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        QRegularExpressionMatchIterator it = re.globalMatch(html);
+
+        QStringList results;
+        while (it.hasNext()) {
+            results << it.next().captured(0);
+        }
+        results.removeDuplicates();
+
+        if (results.isEmpty()) {
+            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+        } else {
+            QString htmlOutput;
+            for (const QString &link : results) {
+                QString fullUrl = link.startsWith("http") ? link : "https://" + link;
+                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
+            }
+            ui->textBrowser->setHtml(htmlOutput);
         }
     });
 
