@@ -114,12 +114,16 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         qDebug() << "Загружаем:" << url.toString();
         webView->load(url);
     }
+setAttribute(Qt::WA_DontShowOnScreen);
+hide();
+
 }
 
 PlayerWindow::~PlayerWindow()
 {
-  webView->close();
+    webView->close();
     webView->deleteLater();
     delete ui;
 }
+
 
