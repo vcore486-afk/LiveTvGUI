@@ -29,7 +29,9 @@ private slots:
 
     void on_urlField_textEdited(const QString &arg1);
 
-   
+
+
+    void on_playurl_clicked();
 
 private:
     Ui::MainWindow *ui;

@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QDesktopServices>
 #include "playerwindow.h"    // ← ЭТО САМОЕ ГЛАВНОЕ!
+#include <QProcess>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -118,5 +119,31 @@ void MainWindow::on_urlField_textEdited(const QString &arg1)
     // Можно добавить дополнительную логику, например, обновление интерфейса
     qDebug() << "Установлен URL в urlField:" << arg1;
 
+}
+
+
+void MainWindow::on_playurl_clicked()
+{
+  QString input = ui->urlField->text();
+
+    
+
+    QProcess process;
+
+    QStringList arguments;
+
+    arguments << input;
+
+    QStringList anotherList = {input};
+
+    QString program = "echoplaylist";
+
+    process.setProgram(program);
+
+    process.setArguments(anotherList);
+
+    process.start();
+
+    process.waitForFinished();
 }
 
