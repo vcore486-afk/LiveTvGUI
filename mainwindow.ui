@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>1212</width>
     <height>645</height>
    </rect>
   </property>
@@ -72,7 +72,7 @@
      <rect>
       <x>70</x>
       <y>150</y>
-      <width>721</width>
+      <width>291</width>
       <height>441</height>
      </rect>
     </property>
@@ -126,13 +126,23 @@
      <string>Парсер ЛЧ</string>
     </property>
    </widget>
+   <widget class="QTextBrowser" name="textBrowserEvents">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>150</y>
+      <width>256</width>
+      <height>441</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1212</width>
      <height>19</height>
     </rect>
    </property>
