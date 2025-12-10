@@ -20,3 +20,6 @@
 /LiveTvGUI-Qt6
 /.qtc_clangd/*
 /qrc_resources.o
+/m3u8interceptor.o
+/moc_m3u8interceptor.o
+/moc_m3u8interceptor.cpp

@@ -1,47 +1,53 @@
-// playerwindow.cpp — ФИНАЛЬНАЯ ВЕРСИЯ (декабрь 2025, FreeBSD + Qt6)
+// playerwindow.cpp — АБСОЛЮТНО ФИНАЛЬНАЯ ВЕРСИЯ (FreeBSD + Qt6, декабрь 2025)
 #include "playerwindow.h"
 #include "ui_playerwindow.h"
+#include "m3u8interceptor.h"
 
 #include <QWebEngineView>
-#include <QWebEngineSettings>
+#include <QWebEnginePage>                 // ← теперь используем стандартный page
 #include <QWebEngineProfile>
-#include <QWebEngineFullScreenRequest>
 #include <QWebEngineScript>
 #include <QWebEngineScriptCollection>
+#include <QWebEngineSettings>
+#include <QWebEngineFullScreenRequest>
 #include <QFile>
 #include <QTimer>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QDebug>
 
 PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::PlayerWindow)
+    , m_mpvLaunched(false)
 {
     ui->setupUi(this);
     setWindowTitle("LiveTV Player — Stream Detector Active");
-    resize(1200, 800);
+    resize(1280, 800);
+
+    qputenv("QTWEBENGINE_DISABLE_SANDBOX", "1");
 
     webView = new QWebEngineView(this);
-
-    // === Профиль + кастомная страница ===
-    QWebEngineProfile *profile = new QWebEngineProfile(this);
-    DebugPage *page = new DebugPage(profile, this);
+    QWebEngineProfile *profile = new QWebEngineProfile("LiveTVProfile", this);
+    QWebEnginePage *page = new QWebEnginePage(profile, this);  // ← обычный QWebEnginePage
 
     profile->setHttpUserAgent(
         "Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+        "(KHTML, like Gecko) Chrome/129.0 Safari/537.36"
     );
 
     webView->setPage(page);
     setCentralWidget(webView);
 
+    // Настройки
     auto *settings = page->settings();
     settings->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
     settings->setAttribute(QWebEngineSettings::JavascriptEnabled, true);
     settings->setAttribute(QWebEngineSettings::PluginsEnabled, true);
     settings->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
+    settings->setAttribute(QWebEngineSettings::AllowRunningInsecureContent, true);
 
-    // === Внедряем StreamDetector ===
+    // StreamDetector (для красивых логов)
     QFile scriptFile(":/stream-detector.js");
     if (scriptFile.open(QIODevice::ReadOnly)) {
         QString jsCode = scriptFile.readAll();
@@ -50,88 +56,70 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         QWebEngineScript script;
         script.setName("StreamDetector");
         script.setSourceCode(jsCode);
-        script.setInjectionPoint(QWebEngineScript::DocumentReady);
+        script.setInjectionPoint(QWebEngineScript::DocumentCreation);
         script.setRunsOnSubFrames(true);
         script.setWorldId(QWebEngineScript::MainWorld);
 
-        page->scripts().insert(script);
-        qDebug() << "StreamDetector внедрён успешно!";
-    } else {
-        qCritical() << "ОШИБКА: не найден :/stream-detector.js — проверь resources.qrc!";
-        return;
+        profile->scripts()->insert(script);
+        qDebug() << "StreamDetector внедрён";
     }
 
-    // === Полноэкранный режим ===
-    connect(page, &QWebEnginePage::fullScreenRequested, this,
-            [this](QWebEngineFullScreenRequest request) {
-        request.accept();
-        request.toggleOn() ? showFullScreen() : showNormal();
+    // === NETWORK INTERCEPTOR — ловит любой m3u8 на livetv869.me ===
+    M3u8Interceptor *interceptor = new M3u8Interceptor(this);
+    profile->setUrlRequestInterceptor(interceptor);
+
+    connect(interceptor, &M3u8Interceptor::streamFound, this, [this](const QString &url) {
+        if (m_mpvLaunched || !url.contains(".m3u8")) return;
+        m_mpvLaunched = true;
+
+        qDebug().noquote() << "ЗАПУСКАЕМ MPV →" << url;
+
+        QString mpvPath = QStandardPaths::findExecutable("mpv");
+        if (mpvPath.isEmpty() || !QFile::exists(mpvPath))
+            mpvPath = "/usr/local/bin/mpv";
+
+        if (!QFile::exists(mpvPath)) {
+            qCritical() << "mpv не найден! Выполните: pkg install mpv";
+            return;
+        }
+
+        QProcess::startDetached(mpvPath, QStringList()
+            << "--http-header-fields=Referer: https://livetv869.me/"
+            << "--user-agent=Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+            << "--hwdec=auto-safe"
+            << "--vo=gpu"
+            << "--cache=yes"
+            << "--volume=80"
+            << "--no-terminal"
+            << "--really-quiet"
+            << "--title=LiveTV • NHL"
+            << url
+        );
+
+        qDebug() << "mpv запущен!";
+        QTimer::singleShot(800, this, &QWidget::close);
     });
 
-    // === ГЛАВНОЕ: после загрузки — выводим все потоки + авто-mpv ===
-    connect(page, &QWebEnginePage::loadFinished, this, [page, this](bool ok) {
-        if (!ok) return;
+    // Полноэкранный режим
+    connect(page, &QWebEnginePage::fullScreenRequested, this, [this](QWebEngineFullScreenRequest r) {
+        r.accept();
+        r.toggleOn() ? showFullScreen() : showNormal();
+    });
 
-        QTimer::singleShot(4000, page, [page, this]() {
-            page->runJavaScript(R"(
-                if (window.detectedStreams && window.detectedStreams.length > 0) {
-                    console.log("%cНайдено потоков: " + window.detectedStreams.length, "color: lime; font-weight: bold;");
-
-                    window.detectedStreams.forEach((stream, i) => {
-                        const color = stream.type === 'HLS' ? 'cyan' : 
-                                     stream.type === 'DASH' ? 'magenta' : 'yellow';
-                        console.log(`%c[${i+1}] ${stream.type} → ${stream.url}`, 
-                                    `color: ${color}; font-weight: bold;`);
-                    });
-
-                    const best = window.detectedStreams
-                        .filter(s => s.type === 'HLS' && s.url.includes('.m3u8'))
-                        .sort((a, b) => b.url.length - a.url.length)[0];
-
-                    if (best) {
-                        console.log("%cЛУЧШИЙ ПОТОК: " + best.url, "color: red; font-size: 18px;");
-                        window.bestStreamUrl = best.url;
-                    }
-
-                    JSON.stringify(window.detectedStreams);
-                } else {
-                    "[]";
-                }
-            )", [page, this](const QVariant &result) {
-                QString json = result.toString();
-                if (json != "[]") {
-                    qDebug().noquote() << "Все потоки:" << json;
-
-                    // Автозапуск mpv
-                    page->runJavaScript("window.bestStreamUrl || ''", [this](const QVariant &v) {
-                        QString bestUrl = v.toString().trimmed();
-                        if (!bestUrl.isEmpty() && bestUrl.contains(".m3u8")) {
-                            qDebug().noquote() << "ЗАПУСКАЕМ MPV:" << bestUrl;
-
-                            QProcess::startDetached("mpv", QStringList()
-                                << "--referrer=https://livetv.sx/"
-                                << "--user-agent=Mozilla/5.0 (X11; FreeBSD amd64)"
-                                << "--volume=70"
-                                << "--hwdec=auto"
-                                << "--no-terminal"
-                                << bestUrl
-                            );
-
-                            this->close();  // Закрываем плеер
-                        }
-                    });
-                }
-            });
-        });
+    connect(page, &QWebEnginePage::loadFinished, this, [](bool ok) {
+        qDebug() << (ok ? "Страница загружена — ждём поток..." : "Ошибка загрузки");
     });
 
     if (url.isValid()) {
-        qDebug() << "Загрузка:" << url.toString();
+        qDebug() << "Загружаем:" << url.toString();
         webView->load(url);
     }
 }
 
 PlayerWindow::~PlayerWindow()
 {
+  webView->close();
+    webView->deleteLater();
     delete ui;
 }
+

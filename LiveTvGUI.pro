@@ -1,28 +1,23 @@
-QT       += core gui widgets network webenginewidgets
+QT       += core gui widgets webenginewidgets webenginecore
 
-CONFIG   += c++17 qt quick
+CONFIG   += c++17
 
 TARGET   = LiveTvGUI-Qt6
 TEMPLATE = app
 
-# Это важно для Qt6!
-greaterThan(QT_MAJOR_VERSION, 5) {
-    QT += webenginewidgets
-}
-
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    playerwindow.cpp
+    playerwindow.cpp \
+    m3u8interceptor.cpp        # ← добавили!
 
 HEADERS += \
     mainwindow.h \
-    playerwindow.h
+    playerwindow.h \
+    m3u8interceptor.h          # ← и заголовок тоже
 
 FORMS += \
     mainwindow.ui \
     playerwindow.ui
 
-# Для совместимости с Qt5-кодом (если используешь QString::arg и т.п.)
-QT += core5compat
 RESOURCES += resources.qrc
