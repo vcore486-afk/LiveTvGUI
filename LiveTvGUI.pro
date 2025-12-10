@@ -25,3 +25,4 @@ FORMS += \
 
 # Для совместимости с Qt5-кодом (если используешь QString::arg и т.п.)
 QT += core5compat
+RESOURCES += resources.qrc

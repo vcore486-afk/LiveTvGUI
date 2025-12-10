@@ -18,3 +18,5 @@
 /playerwindow.ui
 /ui_playerwindow.h
 /LiveTvGUI-Qt6
+/.qtc_clangd/*
+/qrc_resources.o
