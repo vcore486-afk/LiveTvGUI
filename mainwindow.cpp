@@ -10,7 +10,10 @@
 #include "playerwindow.h"    // ← ЭТО САМОЕ ГЛАВНОЕ!
 #include <QProcess>
 #include <QFile>
-
+#include <QResource>
+#include <iostream>
+#include <QDir>
+#include <QStandardPaths>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -109,11 +112,6 @@ void MainWindow::on_pushButton_clearurl_clicked()
 
 }
 
-
-
-
-
-
 void MainWindow::on_urlField_textEdited(const QString &arg1)
 {
 
@@ -151,9 +149,41 @@ void MainWindow::on_playurl_clicked()
     process.waitForFinished();
 }
 
+void callPythonScript() {
+    
 
+    // Загрузка Python-скрипта из ресурсов
+    QResource resource(":/find_events.py");
+    if (!resource.isValid()) {
+        std::cerr << "Resource not found" << std::endl;
+        return;
+    }
+
+    // Чтение содержимого скрипта
+    QByteArray scriptContent = QByteArray::fromRawData(reinterpret_cast<const char*>(resource.data()), resource.size());
+    const char* script = scriptContent.constData();
+
+   // Получение пути к домашнему каталогу и создание пути к папке livetv
+    QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    QString filePath = homePath + "/.livetv/find_events.py";
+
+    // Создание папки livetv, если она не существует
+    QDir().mkpath(homePath + "/.livetv");
+
+    // Сохранение скрипта на диск
+    QFile file(filePath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(scriptContent);
+        file.close();
+    } else {
+        std::cerr << "Failed to save script to file" << std::endl;
+    }
+}
 void MainWindow::on_pushButton_2_clicked()
 {
+
+     callPythonScript();
+
     // Сначала вызываем Python-функцию
     PythonManager::instance().callFunction("find_events", "main");
 

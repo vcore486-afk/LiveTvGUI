@@ -1,6 +1,7 @@
 #include "pythonmanager.h"
 #include <QDir>
 #include <QDebug>
+#include <QStandardPaths>
 
 PythonManager& PythonManager::instance() {
     static PythonManager inst;
@@ -11,11 +12,13 @@ PythonManager::PythonManager() {
     if (!initialized) {
         Py_Initialize();
 
-        // Добавляем рабочий путь + путь проекта
+        // Получение пути к домашнему каталогу и создание пути к папке .livetv
+        QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+        QString livetvPath = homePath + "/.livetv";
+
+        // Добавляем путь к папке .livetv
         PyRun_SimpleString("import sys, os");
-        PyRun_SimpleString(("sys.path.append('" +
-                            QDir::currentPath() + "')").toUtf8().data());
-        PyRun_SimpleString("sys.path.append('/home/definitly/LiveTvGUI')");
+        PyRun_SimpleString(("sys.path.append('" + livetvPath + "')").toUtf8().data());
 
         initialized = true;
         qDebug() << "[PythonManager] Python initialized";
