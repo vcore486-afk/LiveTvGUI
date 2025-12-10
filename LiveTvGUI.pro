@@ -1,12 +1,14 @@
-QT += core gui widgets webenginewidgets network webenginecore
+QT       += core gui widgets network webenginewidgets
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+CONFIG   += c++17 qt quick
 
-CONFIG += c++17
+TARGET   = LiveTvGUI-Qt6
+TEMPLATE = app
 
-# You can make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+# Это важно для Qt6!
+greaterThan(QT_MAJOR_VERSION, 5) {
+    QT += webenginewidgets
+}
 
 SOURCES += \
     main.cpp \
@@ -21,7 +23,5 @@ FORMS += \
     mainwindow.ui \
     playerwindow.ui
 
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
+# Для совместимости с Qt5-кодом (если используешь QString::arg и т.п.)
+QT += core5compat
