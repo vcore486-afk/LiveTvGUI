@@ -1,12 +1,16 @@
+#include <Python.h> // CPython API
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QRegularExpression>
+#include "pythonmanager.h"   // ← обязательно!
 #include <QDebug>
 #include <QDesktopServices>
 #include "playerwindow.h"    // ← ЭТО САМОЕ ГЛАВНОЕ!
 #include <QProcess>
+#include <QFile>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -147,3 +151,38 @@ void MainWindow::on_playurl_clicked()
     process.waitForFinished();
 }
 
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    // Сначала вызываем Python-функцию
+    PythonManager::instance().callFunction("find_events", "main");
+
+    // Читаем результат из файла events.txt
+    QFile file("events.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qCritical() << "Файл не открыт!";
+        return;
+    }
+
+    QTextStream stream(&file);
+    QString htmlContent;
+
+    // Читаем файл построчно и формируем HTML-разметку
+    while (!stream.atEnd()) {
+        QString line = stream.readLine();
+        QStringList parts = line.split('\t');  // Разделение по табуляции
+
+        if (parts.size() == 2) {
+            QString title = parts[0].trimmed();
+            QString href = parts[1].trimmed();
+
+            // Добавляем строку в HTML с кликабельной ссылкой
+            htmlContent += QString("<p><strong>%1</strong> (<a href='%2'>перейти</a>)</p>\n").arg(title, href);
+        }
+    }
+
+    file.close();
+
+    // Устанавливаем HTML-разметку в виджет
+    ui->textEdit->setHtml(htmlContent);
+}

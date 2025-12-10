@@ -24,3 +24,6 @@
 /moc_m3u8interceptor.o
 /moc_m3u8interceptor.cpp
 /qrc_resources.cpp
+/pythonmanager.o
+/__pycache__/*
+/events.txt

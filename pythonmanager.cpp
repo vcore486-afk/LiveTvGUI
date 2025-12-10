@@ -1,0 +1,91 @@
+#include "pythonmanager.h"
+#include <QDir>
+#include <QDebug>
+
+PythonManager& PythonManager::instance() {
+    static PythonManager inst;
+    return inst;
+}
+
+PythonManager::PythonManager() {
+    if (!initialized) {
+        Py_Initialize();
+
+        // Добавляем рабочий путь + путь проекта
+        PyRun_SimpleString("import sys, os");
+        PyRun_SimpleString(("sys.path.append('" +
+                            QDir::currentPath() + "')").toUtf8().data());
+        PyRun_SimpleString("sys.path.append('/home/definitly/LiveTvGUI')");
+
+        initialized = true;
+        qDebug() << "[PythonManager] Python initialized";
+    }
+}
+
+PythonManager::~PythonManager() {
+    if (initialized) {
+        Py_Finalize();
+        qDebug() << "[PythonManager] Python finalized";
+    }
+}
+
+bool PythonManager::importModule(const char* name) {
+    PyObject* pName = PyUnicode_FromString(name);
+    PyObject* pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+
+    if (!pModule) {
+        PyErr_Print();
+        return false;
+    }
+
+    Py_DECREF(pModule);
+    return true;
+}
+
+QString PythonManager::callFunction(const char* module, const char* function)
+{
+    PyObject* pName = PyUnicode_FromString(module);
+    PyObject* pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+
+    if (!pModule) {
+        PyErr_Print();
+        qDebug() << "Модуль не импортирован!";
+        return "Ошибка импорта модуля";
+    }
+
+    PyObject* pFunc = PyObject_GetAttrString(pModule, function);
+
+    if (!pFunc || !PyCallable_Check(pFunc)) {
+        Py_DECREF(pModule);
+        PyErr_Print();
+        qDebug() << "Функция не найдена или не вызываемая!";
+        return "Функция не найдена или не вызываемая";
+    }
+
+    PyObject* pResult = PyObject_CallObject(pFunc, NULL);
+    Py_DECREF(pFunc);
+    Py_DECREF(pModule);
+
+    if (!pResult) {
+        PyErr_Print();
+        qDebug() << "Ошибка выполнения функции!";
+        return "Ошибка выполнения функции";
+    }
+
+    // Начало блока добавления диагностики
+    // Распечатываем тип и полное представление объекта
+    qDebug() << "Тип объекта:" << Py_TYPE(pResult)->tp_name;
+    qDebug() << "Объект:" << PyObject_Repr(pResult);
+
+    if (PyUnicode_Check(pResult)) {
+        QString result = QString::fromUtf8(PyUnicode_AsUTF8(pResult));
+        Py_DECREF(pResult);
+        return result;
+    } else {
+        Py_DECREF(pResult);
+        return "Возвращенное значение не является строкой!";
+    }
+    // Конец блока добавления диагностики
+}
