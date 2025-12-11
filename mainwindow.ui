@@ -162,6 +162,19 @@
      <string>Парсер ЛК</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="parsernhl">
+    <property name="geometry">
+     <rect>
+      <x>400</x>
+      <y>20</y>
+      <width>83</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Парсер НХЛ</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

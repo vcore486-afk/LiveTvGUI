@@ -319,13 +319,16 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
 }
 
 // Объявление общей функции processEvents
-void MainWindow::processEvents(const QString& tournamentName)
+void MainWindow::processEvents(const QString &tournamentName, int pageNumber)
 {
     callPythonScript(); // Вынос общего вызова перед обработкой каждого события
 
-    // Вызов Python-функции find_events с именем турнира
-PythonManager::instance().callFunction("find_events", "main", tournamentName.toStdString().c_str());
-
+    
+// Объединяем название турнира и номер страницы в одну строку
+    QString combinedArgument = tournamentName + "|" + QString::number(pageNumber);
+    qDebug() << "Переданная строка: " << combinedArgument; // Диагностика
+    // Вызов Python-функции с объединённым аргументом
+    PythonManager::instance().callFunction("find_events", "main", combinedArgument.toStdString().c_str());
     // Получение пути к файлу events.txt
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString filePath = homePath + "/.livetv/events.txt";
@@ -365,18 +368,24 @@ PythonManager::instance().callFunction("find_events", "main", tournamentName.toS
 void MainWindow::on_pushButton_2_clicked()
 {
 
- processEvents("Лига Чемпионов"); // Аналогично передаем нужный турнир
+ processEvents("Лига Чемпионов",1); // Аналогично передаем нужный турнир
 }
 
 //парсер страницы для получения событий лиги европы
 void MainWindow::on_parserel_clicked()
 {
- processEvents("Лига Европы"); // Передача нужного турнира
+ processEvents("Лига Европы",1); // Передача нужного турнира
 }
 
 
 void MainWindow::on_parseruefa_clicked()
 {
-   processEvents("Лига Конференций");
+   processEvents("Лига Конференций",1);
+}
+
+
+void MainWindow::on_parsernhl_clicked()
+{
+     processEvents("НХЛ",2);
 }
 

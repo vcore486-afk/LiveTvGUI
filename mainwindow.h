@@ -36,10 +36,12 @@ private slots:
     void on_pushButton_2_clicked();
 
     void on_geturlpushButton_clicked();
-    void processEvents(const QString &tournamentName);   // Прототип нового метода
+void processEvents(const QString &tournamentName, int pageNumber);
     void on_parserel_clicked();
 
     void on_parseruefa_clicked();
+
+    void on_parsernhl_clicked();
 
 private:
     Ui::MainWindow *ui;

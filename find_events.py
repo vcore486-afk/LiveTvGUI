@@ -1,60 +1,94 @@
-import requests
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from pathlib import Path
+from urllib.parse import urljoin
+import requests
 from bs4 import BeautifulSoup
 
-def find_related_events(url, tournament_name):
-    """Ищет все элементы, относящиеся к заданному турниру по названию."""
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
+BASE_DOMAIN = "https://livetv869.me"
 
+
+def find_related_events(url, tournament_name, session=None, timeout=10):
+    session = session or requests.Session()
+
+    try:
+        resp = session.get(url, timeout=timeout)
+        resp.raise_for_status()
+    except Exception:
+        return []
+
+    soup = BeautifulSoup(resp.content, "html.parser")
     events = []
+    seen = set()
 
-    # Находим все изображения с соответствующим названием турнира
-    images = soup.find_all('img', attrs={'alt': tournament_name})
+    images = soup.find_all("img", attrs={"alt": tournament_name})
+    if not images:
+        images = [
+            img for img in soup.find_all("img")
+            if img.get("alt") and tournament_name in img.get("alt")
+        ]
 
-    for image in images:
-        # Находим ближайшего родителя, содержащий событие
-        event_container = image.find_parent(class_=lambda cls: cls is None or cls != '')
-        if event_container:
-            # Находим следующую важную ссылку
-            next_link = event_container.find_next('a')
-            if next_link:
-                title = next_link.get_text(strip=True)
-                href = f"https://livetv869.me{next_link.get('href', '')}"
-                events.append((title, href))
+    for img in images:
+        ancestor = img
+        link = None
+        while ancestor is not None:
+            link = ancestor.find("a", href=True)
+            if link:
+                break
+            ancestor = ancestor.parent
+
+        if not link:
+            link = img.find_next("a", href=True)
+
+        if not link:
+            continue
+
+        href = link.get("href", "").strip()
+        if not href:
+            continue
+
+        full_href = urljoin(BASE_DOMAIN, href)
+        title = link.get_text(strip=True) or link.get("title") or full_href
+
+        if (title, full_href) not in seen:
+            seen.add((title, full_href))
+            events.append((title, full_href))
 
     return events
 
-def save_to_file(events, filename="events.txt"):
-    """Сохраняет события в указанный файл."""
-    home_dir = Path.home()
-    livetv_dir = home_dir / ".livetv"
-    livetv_dir.mkdir(parents=True, exist_ok=True)
 
-    file_path = livetv_dir / filename
+def save_to_file(events, filename="events.txt"):
+    path = Path.home() / ".livetv" / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with path.open("w", encoding="utf-8") as f:
+        for title, href in events:
+            f.write(f"{title}\t{href}\n")
+
+    return str(path)
+
+
+def main(raw):
+    """
+    ВАЖНО:
+    Эта функция вызывается ИСКЛЮЧИТЕЛЬНО с одним аргументом — строкой:
+    'НХЛ|2'
+    Qt НЕ передаёт второй аргумент!
+    """
 
     try:
-        with open(file_path, "w", encoding="utf-8") as file:
-            for title, href in events:
-                file.write(f"{title}\t{href}\n")
-        print(f"События успешно сохранены в файл {file_path}.")
-    except IOError as e:
-        print(f"Ошибка при сохранении файла: {e}")
+        tournament, page = raw.split("|", 1)
+    except ValueError:
+        print("FORMAT_ERROR")
+        return
 
-def main(tournament_name):
-    url = "https://livetv869.me/allupcomingsports/1"
-    related_events = find_related_events(url, tournament_name)
+    tournament = tournament.strip()
+    page = int(page.strip())
 
-    if related_events:
-        print("Связанные события:\n")
-        for title, href in related_events:
-            print(f"- Название: {title}\n  Ссылка: {href}\n")
-        
-        # Сохраняем события в файл
-        save_to_file(related_events)
-    else:
-        print("Нет событий, связанных с указанным турниром.")
+    url = f"{BASE_DOMAIN}/allupcomingsports/{page}"
 
-if __name__ == "__main__":
-    # Запускаем основную функцию с передачей первого аргумента
-    main("Лига Европы")
+    events = find_related_events(url, tournament)
+    save_to_file(events)
+
+    print("OK")
