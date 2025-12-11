@@ -22,7 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
     , manager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
-
+ui->textBrowserEvents->setOpenLinks(false);
+ui->textBrowserEvents->setOpenExternalLinks(false);
     // ВАЖНО: настройка QTextEdit для кликабельных ссылок
     ui->textBrowser->setOpenExternalLinks(false);
     ui->textBrowser->setOpenLinks(false);
