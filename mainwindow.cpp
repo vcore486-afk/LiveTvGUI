@@ -390,3 +390,9 @@ void MainWindow::on_parsernhl_clicked()
      processEvents("НХЛ",2);
 }
 
+
+void MainWindow::on_parserbundesliga_clicked()
+{
+      processEvents("Футбол. Германия. Бундеслига",1);
+}
+

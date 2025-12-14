@@ -43,6 +43,8 @@ void processEvents(const QString &tournamentName, int pageNumber);
 
     void on_parsernhl_clicked();
 
+    void on_parserbundesliga_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;

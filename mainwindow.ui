@@ -175,6 +175,19 @@
      <string>Парсер НХЛ</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="parserbundesliga">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>20</y>
+      <width>151</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Парсер Бундеслига</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
