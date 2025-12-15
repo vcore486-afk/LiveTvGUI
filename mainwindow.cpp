@@ -324,14 +324,15 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
 // Объявление общей функции processEvents
 void MainWindow::processEvents(const QString &tournamentName, int pageNumber)
 {
-   callPythonScript(":/find_events.py");
+    callPythonScript(":/find_events.py");
 
-    
-// Объединяем название турнира и номер страницы в одну строку
+    // Объединяем название турнира и номер страницы в одну строку
     QString combinedArgument = tournamentName + "|" + QString::number(pageNumber);
     qDebug() << "Переданная строка: " << combinedArgument; // Диагностика
+
     // Вызов Python-функции с объединённым аргументом
     PythonManager::instance().callFunction("find_events", "main", combinedArgument.toStdString().c_str());
+
     // Получение пути к файлу events.txt
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString filePath = homePath + "/.livetv/events.txt";
@@ -351,12 +352,15 @@ void MainWindow::processEvents(const QString &tournamentName, int pageNumber)
         QString line = stream.readLine();
         QStringList parts = line.split('\t');
 
-        if (parts.size() == 2) {
+        // Проверяем, что есть 3 колонки: название, время, ссылка
+        if (parts.size() >= 3) {
             QString title = parts[0].trimmed();
-            QString href = parts[1].trimmed();
+            QString time = parts[1].trimmed();
+            QString href = parts[2].trimmed();
 
-            // Добавляем ссылку в HTML
-            htmlContent += QString("<p><strong>%1</strong> (<a href='%2'>перейти</a>)</p>\n").arg(title, href);
+            // Формируем HTML с временем и ссылкой
+            htmlContent += QString("<p><strong>%1</strong> — <em>%2</em> (<a href='%3'>перейти</a>)</p>\n")
+                               .arg(title, time, href);
         }
     }
 

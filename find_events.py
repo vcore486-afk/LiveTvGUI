@@ -51,9 +51,16 @@ def find_related_events(url, tournament_name, session=None, timeout=10):
         full_href = urljoin(BASE_DOMAIN, href)
         title = link.get_text(strip=True) or link.get("title") or full_href
 
-        if (title, full_href) not in seen:
-            seen.add((title, full_href))
-            events.append((title, full_href))
+        # Получаем время из <span class="evdesc">
+        time_span = link.find_next("span", class_="evdesc")
+        event_time = time_span.get_text(" ", strip=True) if time_span else ""
+
+        # Добавляем время к названию через табуляцию
+        title_with_time = f"{title}\t{event_time}" if event_time else title
+
+        if (title_with_time, full_href) not in seen:
+            seen.add((title_with_time, full_href))
+            events.append((title_with_time, full_href))
 
     return events
 
@@ -63,8 +70,8 @@ def save_to_file(events, filename="events.txt"):
     path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open("w", encoding="utf-8") as f:
-        for title, href in events:
-            f.write(f"{title}\t{href}\n")
+        for title_with_time, href in events:
+            f.write(f"{title_with_time}\t{href}\n")
 
     return str(path)
 
