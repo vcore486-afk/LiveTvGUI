@@ -3,5 +3,6 @@
     <file>livetv.png</file>
     <file>stream-detector.js</file>
     <file>find_events.py</file>
+    <file>parser_matchday.py</file>
   </qresource>
 </RCC>

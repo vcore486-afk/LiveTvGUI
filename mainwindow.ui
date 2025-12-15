@@ -201,6 +201,19 @@
      <string>Парсер Турецкой Лиги</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="matchday">
+    <property name="geometry">
+     <rect>
+      <x>980</x>
+      <y>20</y>
+      <width>151</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Главные матчи дня</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

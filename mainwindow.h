@@ -36,7 +36,7 @@ private slots:
     void on_pushButton_2_clicked();
 
     void on_geturlpushButton_clicked();
-void processEvents(const QString &tournamentName, int pageNumber);
+    void processEvents(const QString &tournamentName, int pageNumber);
     void on_parserel_clicked();
 
     void on_parseruefa_clicked();
@@ -46,6 +46,8 @@ void processEvents(const QString &tournamentName, int pageNumber);
     void on_parserbundesliga_clicked();
 
     void on_turkishliga_clicked();
+
+    void on_matchday_clicked();
 
 private:
     Ui::MainWindow *ui;

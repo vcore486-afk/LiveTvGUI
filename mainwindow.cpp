@@ -185,6 +185,39 @@ void callPythonScript() {
 }
 
 
+void callPythonScript_matchday() {
+
+
+    // Загрузка Python-скрипта из ресурсов
+    QResource resource(":/parser_matchday.py");
+    if (!resource.isValid()) {
+        std::cerr << "Resource not found" << std::endl;
+        return;
+    }
+
+    // Чтение содержимого скрипта
+    QByteArray scriptContent = QByteArray::fromRawData(reinterpret_cast<const char*>(resource.data()), resource.size());
+
+
+    // Получение пути к домашнему каталогу и создание пути к папке livetv
+    QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    QString filePath = homePath + "/.livetv/parser_matchday.py";
+
+    // Создание папки livetv, если она не существует
+    QDir().mkpath(homePath + "/.livetv");
+
+    // Сохранение скрипта на диск
+    QFile file(filePath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(scriptContent);
+        file.close();
+    } else {
+        std::cerr << "Failed to save script to file" << std::endl;
+    }
+}
+
+
+
 //получение ссылок на плееры 
 void MainWindow::getplayerurl(const QString &currentUrl)
 {
@@ -402,3 +435,102 @@ void MainWindow::on_turkishliga_clicked()
      processEvents("Турция. Суперлига",1);
 }
 
+
+void MainWindow::on_matchday_clicked()
+{
+    // 1. Сохраняем скрипт из ресурсов
+    callPythonScript_matchday();
+
+    QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    QString scriptPath = homePath + "/.livetv/parser_matchday.py";
+    QString filePath = homePath + "/.livetv/matchday_events.txt";
+
+    QString htmlContent;
+
+    // 2. Проверяем, что скрипт существует
+    if (!QFile::exists(scriptPath)) {
+        htmlContent += "<p style='color:red;'><b>Ошибка:</b> Скрипт parser_matchday.py не найден</p>";
+        ui->textBrowser->setHtml(htmlContent);
+        return;
+    }
+
+    // 3. Запускаем скрипт
+    QProcess process;
+    process.start("python3", QStringList() << scriptPath);
+
+    if (!process.waitForFinished(10000)) { // ждём до 10 секунд
+        htmlContent += "<p style='color:red;'><b>Ошибка:</b> Скрипт не завершился вовремя</p>";
+        ui->textBrowser->setHtml(htmlContent);
+        return;
+    }
+
+    // 4. Получаем вывод скрипта
+    QString stdOutput = process.readAllStandardOutput();
+    QString stdError  = process.readAllStandardError();
+
+    if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
+        htmlContent += "<p style='color:red;'><b>Ошибка выполнения скрипта Python:</b></p>";
+        htmlContent += "<pre>" + stdError.toHtmlEscaped() + "</pre>";
+        ui->textBrowser->setHtml(htmlContent);
+        return;
+    }
+
+    // 5. Читаем файл с результатом
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        htmlContent += "<p style='color:red;'><b>Ошибка:</b> Не удалось открыть файл matchday_events.txt</p>";
+        ui->textBrowser->setHtml(htmlContent);
+        return;
+    }
+
+    QTextStream stream(&file);
+
+    // Пропускаем заголовок
+    while (!stream.atEnd()) {
+        QString line = stream.readLine();
+        if (line.trimmed().isEmpty())
+            break;
+    }
+
+    // Читаем блоки по 4 строки
+    while (!stream.atEnd()) {
+        QString firstLine = stream.readLine().trimmed();
+        if (firstLine.isEmpty())
+            continue;
+
+        QString dateTime = stream.readLine().trimmed();
+        stream.readLine(); // (Лига) — пропускаем
+        QString link = stream.readLine().trimmed();
+
+        QStringList parts = firstLine.split('\t');
+        if (parts.size() != 2)
+            continue;
+
+        QString league = parts[0];
+        QString match = parts[1];
+
+        htmlContent += QString(
+            "<p>"
+            "<b>%1</b><br>"
+            "%2<br>"
+            "<a href='%3'>Перейти к матчу</a>"
+            "</p><hr>"
+        ).arg(match, dateTime, link);
+    }
+
+    file.close();
+
+    // 6. Выводим в textBrowser
+    if (!stdError.isEmpty()) {
+        htmlContent += "<p style='color:red;'><b>Python stderr:</b></p>";
+        htmlContent += "<pre>" + stdError.toHtmlEscaped() + "</pre>";
+    }
+
+    if (!stdOutput.isEmpty()) {
+        htmlContent += "<p style='color:green;'><b>Python stdout:</b></p>";
+        htmlContent += "<pre>" + stdOutput.toHtmlEscaped() + "</pre>";
+    }
+
+    ui->textBrowser->setOpenExternalLinks(true);
+    ui->textBrowser->setHtml(htmlContent);
+}
