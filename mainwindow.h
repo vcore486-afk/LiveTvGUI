@@ -45,6 +45,8 @@ void processEvents(const QString &tournamentName, int pageNumber);
 
     void on_parserbundesliga_clicked();
 
+    void on_turkishliga_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;

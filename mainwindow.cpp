@@ -396,3 +396,9 @@ void MainWindow::on_parserbundesliga_clicked()
       processEvents("Футбол. Германия. Бундеслига",1);
 }
 
+
+void MainWindow::on_turkishliga_clicked()
+{
+     processEvents("Турция. Суперлига",1);
+}
+
