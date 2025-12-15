@@ -153,58 +153,27 @@ void MainWindow::on_playurl_clicked()
     process.waitForFinished();
 }
 
-void callPythonScript() {
-    
-
+void callPythonScript(const QString &resourcePath) {
     // Загрузка Python-скрипта из ресурсов
-    QResource resource(":/find_events.py");
+    QResource resource(resourcePath);
     if (!resource.isValid()) {
-        std::cerr << "Resource not found" << std::endl;
+        std::cerr << "Resource not found: " << resourcePath.toStdString() << std::endl;
         return;
     }
 
     // Чтение содержимого скрипта
     QByteArray scriptContent = QByteArray::fromRawData(reinterpret_cast<const char*>(resource.data()), resource.size());
-
-
-   // Получение пути к домашнему каталогу и создание пути к папке livetv
-    QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-    QString filePath = homePath + "/.livetv/find_events.py";
-
-    // Создание папки livetv, если она не существует
-    QDir().mkpath(homePath + "/.livetv");
-
-    // Сохранение скрипта на диск
-    QFile file(filePath);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        file.write(scriptContent);
-        file.close();
-    } else {
-        std::cerr << "Failed to save script to file" << std::endl;
-    }
-}
-
-
-void callPythonScript_matchday() {
-
-
-    // Загрузка Python-скрипта из ресурсов
-    QResource resource(":/parser_matchday.py");
-    if (!resource.isValid()) {
-        std::cerr << "Resource not found" << std::endl;
-        return;
-    }
-
-    // Чтение содержимого скрипта
-    QByteArray scriptContent = QByteArray::fromRawData(reinterpret_cast<const char*>(resource.data()), resource.size());
-
 
     // Получение пути к домашнему каталогу и создание пути к папке livetv
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-    QString filePath = homePath + "/.livetv/parser_matchday.py";
+    QString dirPath = homePath + "/.livetv";
 
     // Создание папки livetv, если она не существует
-    QDir().mkpath(homePath + "/.livetv");
+    QDir().mkpath(dirPath);
+
+    // Определение имени файла из пути ресурса
+    QString fileName = QFileInfo(resourcePath).fileName();
+    QString filePath = dirPath + "/" + fileName;
 
     // Сохранение скрипта на диск
     QFile file(filePath);
@@ -212,7 +181,7 @@ void callPythonScript_matchday() {
         file.write(scriptContent);
         file.close();
     } else {
-        std::cerr << "Failed to save script to file" << std::endl;
+        std::cerr << "Failed to save script to file: " << filePath.toStdString() << std::endl;
     }
 }
 
@@ -355,7 +324,7 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
 // Объявление общей функции processEvents
 void MainWindow::processEvents(const QString &tournamentName, int pageNumber)
 {
-    callPythonScript(); // Вынос общего вызова перед обработкой каждого события
+   callPythonScript(":/find_events.py");
 
     
 // Объединяем название турнира и номер страницы в одну строку
@@ -439,7 +408,7 @@ void MainWindow::on_turkishliga_clicked()
 void MainWindow::on_matchday_clicked()
 {
     // 1. Сохраняем скрипт из ресурсов
-    callPythonScript_matchday();
+   callPythonScript(":/parser_matchday.py");
 
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString scriptPath = homePath + "/.livetv/parser_matchday.py";
