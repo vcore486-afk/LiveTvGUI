@@ -37,6 +37,7 @@ private slots:
 
     void on_geturlpushButton_clicked();
     void processEvents(const QString &tournamentName, int pageNumber);
+    void loadTopMatches(int pageNumber);
     void on_parserel_clicked();
 
     void on_parseruefa_clicked();
@@ -48,6 +49,8 @@ private slots:
     void on_turkishliga_clicked();
 
     void on_matchday_clicked();
+
+    void on_parserhockey_clicked();
 
 private:
     Ui::MainWindow *ui;

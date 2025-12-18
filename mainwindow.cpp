@@ -409,14 +409,15 @@ void MainWindow::on_turkishliga_clicked()
 }
 
 
-void MainWindow::on_matchday_clicked()
+void  MainWindow::loadTopMatches(int pageNumber)
 {
     // 1. Сохраняем скрипт из ресурсов
-   callPythonScript(":/parser_matchday.py");
+    callPythonScript(":/parser_matchday.py");
+
 
     QString homePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     QString scriptPath = homePath + "/.livetv/parser_matchday.py";
-    QString filePath = homePath + "/.livetv/matchday_events.txt";
+    QString filePath = homePath + "/.livetv/matchday_events.txt";  // Обычное имя файла без номеров
 
     QString htmlContent;
 
@@ -427,9 +428,9 @@ void MainWindow::on_matchday_clicked()
         return;
     }
 
-    // 3. Запускаем скрипт
+    // 3. Запускаем скрипт, передаем номер страницы как параметр
     QProcess process;
-    process.start("python3", QStringList() << scriptPath);
+    process.start("python3", QStringList() << scriptPath << QString::number(pageNumber));
 
     if (!process.waitForFinished(10000)) { // ждём до 10 секунд
         htmlContent += "<p style='color:red;'><b>Ошибка:</b> Скрипт не завершился вовремя</p>";
@@ -483,12 +484,12 @@ void MainWindow::on_matchday_clicked()
         QString match = parts[1];
 
         htmlContent += QString(
-            "<p>"
-            "<b>%1</b><br>"
-            "%2<br>"
-            "<a href='%3'>Перейти к матчу</a>"
-            "</p><hr>"
-        ).arg(match, dateTime, link);
+                           "<p>"
+                           "<b>%1</b><br>"
+                           "%2<br>"
+                           "<a href='%3'>Перейти к матчу</a>"
+                           "</p><hr>"
+                           ).arg(match, dateTime, link);
     }
 
     file.close();
@@ -507,3 +508,16 @@ void MainWindow::on_matchday_clicked()
     ui->textBrowser->setOpenExternalLinks(true);
     ui->textBrowser->setHtml(htmlContent);
 }
+
+
+
+void MainWindow::on_matchday_clicked()
+{
+    loadTopMatches(1);
+}
+
+void MainWindow::on_parserhockey_clicked()
+{
+    loadTopMatches(2);
+}
+
