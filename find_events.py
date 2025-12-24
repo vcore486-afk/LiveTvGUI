@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-BASE_DOMAIN = "https://livetv869.me"
+BASE_DOMAIN = "https://livetv872.me"
 
 
 def find_related_events(url, tournament_name, session=None, timeout=10):

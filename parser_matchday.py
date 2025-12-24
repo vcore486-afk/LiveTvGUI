@@ -6,7 +6,7 @@ import argparse
 # Функция для парсинга и сохранения данных
 def parse_page(page_number):
     # URL страницы для парсинга с учетом номера страницы
-    URL = f"https://livetv869.me/allupcomingsports/{page_number}/"
+    URL = f"https://livetv872.me/allupcomingsports/{page_number}/"
 
     # Папка для сохранения результатов
     homePath = os.path.expanduser("~")
