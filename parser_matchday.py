@@ -49,7 +49,7 @@ def parse_page(page_number):
                 raw_href = raw_href[len("allupcomingsports/"):]
 
             # Формируем ссылку вида: https://livetv869.me/eventinfo/...
-            link = f"https://livetv869.me/{raw_href}"
+            link = f"https://livetv872.me/{raw_href}"
 
             evdesc = a.find_next("span", class_="evdesc")
             if not evdesc:

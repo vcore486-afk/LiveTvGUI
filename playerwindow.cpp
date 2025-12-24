@@ -87,7 +87,7 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         }
 
         QProcess::startDetached(mpvPath, QStringList()
-            << "--http-header-fields=Referer: https://livetv869.me/"
+            << "--http-header-fields=Referer: https://livetv872.me/"
             << "--user-agent=Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
             << "--hwdec=auto-safe"
             << "--vo=gpu"

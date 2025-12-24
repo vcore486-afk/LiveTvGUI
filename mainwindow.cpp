@@ -206,7 +206,7 @@ qDebug() << "исполняется getplayerurl функция " << currentUrl;
         reply->deleteLater();
 
         // Регулярное выражение для поиска ссылок webplayer и webplayer2
-        QRegularExpression re(R"(cdn\.livetv869\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        QRegularExpression re(R"(cdn\.livetv872\.me\/webplayer(?:2)?\.php[^"\s]*)");
         QRegularExpressionMatchIterator it = re.globalMatch(html);
 
         QStringList results;
@@ -216,7 +216,7 @@ qDebug() << "исполняется getplayerurl функция " << currentUrl;
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv872.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
         } else {
             QString htmlOutput;
             for (const QString &link : results) {
@@ -252,7 +252,7 @@ void MainWindow::on_geturlpushButton_clicked()
         reply->deleteLater();
 
         // Регулярное выражение для поиска ссылок webplayer и webplayer2
-        QRegularExpression re(R"(cdn\.livetv869\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        QRegularExpression re(R"(cdn\.livetv872\.me\/webplayer(?:2)?\.php[^"\s]*)");
         QRegularExpressionMatchIterator it = re.globalMatch(html);
 
         QStringList results;
@@ -262,7 +262,7 @@ void MainWindow::on_geturlpushButton_clicked()
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv872.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
         } else {
             QString htmlOutput;
             for (const QString &link : results) {
@@ -298,7 +298,7 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
         reply->deleteLater();
 
         // Регулярное выражение для поиска ссылок webplayer и webplayer2
-        QRegularExpression re(R"(cdn\.livetv869\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        QRegularExpression re(R"(cdn\.livetv872\.me\/webplayer(?:2)?\.php[^"\s]*)");
         QRegularExpressionMatchIterator it = re.globalMatch(html);
 
         QStringList results;
@@ -308,7 +308,7 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textBrowserEvents->setHtml("<p>Ссылок <code>cdn.livetv869.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowserEvents->setHtml("<p>Ссылок <code>cdn.livetv872.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
         } else {
             QString htmlOutput;
             for (const QString &link : results) {
