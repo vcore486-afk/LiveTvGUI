@@ -146,17 +146,12 @@ QString PlayerWindow::readRefererUrlFromConfig()
     }
 
     QTextStream in(&configFile);
-    QString line;
-    while (in.readLineInto(&line)) {
-        // Ищем строку, которая содержит URL
-        if (line.startsWith("referer_url=")) {
-            return line.mid(QString("referer_url=").length()).trimmed(); // Извлекаем сам URL
-        }
-    }
+    QString line = in.readLine().trimmed();  // просто берём первую строку
+    configFile.close();
 
-    qWarning() << "Не найдено значение referer_url в конфигурации.";
-    return QString();
+    return line;  // возвращаем URL напрямую
 }
+
 
 
 PlayerWindow::~PlayerWindow()

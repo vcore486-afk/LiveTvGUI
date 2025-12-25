@@ -529,3 +529,9 @@ void MainWindow::on_parserhockey_clicked()
     loadTopMatches(2);
 }
 
+
+void MainWindow::on_parsebasketball_clicked()
+{
+    loadTopMatches(3);
+}
+

@@ -53,6 +53,8 @@ private slots:
 
     void on_parserhockey_clicked();
 
+    void on_parsebasketball_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;

@@ -227,6 +227,19 @@
      <string>Главные матчи дни хоккей</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="parsebasketball">
+    <property name="geometry">
+     <rect>
+      <x>930</x>
+      <y>50</y>
+      <width>231</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Главные матчи баскетбол</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -234,7 +247,7 @@
      <x>0</x>
      <y>0</y>
      <width>1212</width>
-     <height>19</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
