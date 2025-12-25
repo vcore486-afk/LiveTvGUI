@@ -6,8 +6,24 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-BASE_DOMAIN = "https://livetv872.me"
+# Функция для чтения домена из конфигурационного файла
+def read_base_domain():
+    config_path = Path.home() / ".livetv" / "config.txt"
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            base_domain = f.read().strip()
+            if not base_domain:
+                raise ValueError("Base domain is empty in the config file.")
+            return base_domain
+    except FileNotFoundError:
+        print(f"Error: {config_path} not found.")
+        raise
+    except Exception as e:
+        print(f"Error reading config file: {e}")
+        raise
 
+# Чтение BASE_DOMAIN из файла config.txt
+BASE_DOMAIN = read_base_domain()
 
 def find_related_events(url, tournament_name, session=None, timeout=10):
     session = session or requests.Session()

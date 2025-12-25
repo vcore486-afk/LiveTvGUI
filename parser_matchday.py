@@ -3,10 +3,29 @@ from bs4 import BeautifulSoup
 import os
 import argparse
 
+# Функция для чтения базового домена из конфигурационного файла
+def read_base_domain():
+    config_path = os.path.join(os.path.expanduser("~"), ".livetv", "config.txt")
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            base_domain = f.read().strip()
+            if not base_domain:
+                raise ValueError("Base domain is empty in the config file.")
+            return base_domain
+    except FileNotFoundError:
+        print(f"❌ Ошибка: файл {config_path} не найден.")
+        raise
+    except Exception as e:
+        print(f"❌ Ошибка при чтении конфигурационного файла: {e}")
+        raise
+
+# Чтение домена из config.txt
+BASE_DOMAIN = read_base_domain()
+
 # Функция для парсинга и сохранения данных
 def parse_page(page_number):
     # URL страницы для парсинга с учетом номера страницы
-    URL = f"https://livetv872.me/allupcomingsports/{page_number}/"
+    URL = f"{BASE_DOMAIN}/allupcomingsports/{page_number}/"
 
     # Папка для сохранения результатов
     homePath = os.path.expanduser("~")
@@ -49,7 +68,7 @@ def parse_page(page_number):
                 raw_href = raw_href[len("allupcomingsports/"):]
 
             # Формируем ссылку вида: https://livetv869.me/eventinfo/...
-            link = f"https://livetv872.me/{raw_href}"
+            link = f"{BASE_DOMAIN}/{raw_href}"
 
             evdesc = a.find_next("span", class_="evdesc")
             if not evdesc:
@@ -76,7 +95,7 @@ def parse_page(page_number):
 
 # Главная функция
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Парсинг матчей с сайта livetv869.me")
+    parser = argparse.ArgumentParser(description="Парсинг матчей с сайта")
     parser.add_argument("page_number", type=int, help="Номер страницы для парсинга")
     args = parser.parse_args()
 
