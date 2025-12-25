@@ -153,7 +153,7 @@ void MainWindow::on_playurl_clicked()
     process.waitForFinished();
 }
 
-void callPythonScript(const QString &resourcePath) {
+void MainWindow::callPythonScript(const QString &resourcePath) {
     // Загрузка Python-скрипта из ресурсов
     QResource resource(resourcePath);
     if (!resource.isValid()) {

@@ -18,6 +18,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void callPythonScript(const QString &resourcePath);
 
 private slots:
 
@@ -56,6 +57,7 @@ private:
     Ui::MainWindow *ui;
     QString currentUrl;
     QNetworkAccessManager *manager;  // <-- поле класса
+
 };
 
 #endif // MAINWINDOW_H
