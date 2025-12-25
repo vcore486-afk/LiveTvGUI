@@ -59,6 +59,7 @@ private:
     Ui::MainWindow *ui;
     QString currentUrl;
     QNetworkAccessManager *manager;  // <-- поле класса
+    QString readLivetvDomainFromConfig();  // ← добавьте сюда
 
 };
 

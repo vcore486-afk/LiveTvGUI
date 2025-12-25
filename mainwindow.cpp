@@ -198,136 +198,248 @@ void MainWindow::callPythonScript(const QString &resourcePath) {
 //получение ссылок на плееры 
 void MainWindow::getplayerurl(const QString &currentUrl)
 {
+    QString domain = readLivetvDomainFromConfig();
+    if (domain.isEmpty()) {
+        ui->textBrowser->setHtml(
+            "<p><b>Домен не задан в ~/.livetv/config.txt</b></p>"
+        );
+        return;
+    }
 
-qDebug() << "исполняется getplayerurl функция " << currentUrl;
-   QNetworkRequest request{QUrl(currentUrl)};
-    QNetworkReply *reply = manager->get(request);
+    qDebug() << "исполняется getplayerurl функция:" << currentUrl;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    QNetworkReply *reply = manager->get(QNetworkRequest(QUrl(currentUrl)));
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, domain]() {
         if (reply->error() != QNetworkReply::NoError) {
-            ui->textBrowser->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
+            ui->textBrowser->setHtml(
+                QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString())
+            );
             reply->deleteLater();
             return;
         }
 
-        QString html = reply->readAll();
+        QString html = QString::fromUtf8(reply->readAll());
         reply->deleteLater();
 
-        // Регулярное выражение для поиска ссылок webplayer и webplayer2
-        QRegularExpression re(R"(cdn\.livetv872\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        // Ищем webplayer / webplayer2 для домена из конфига
+        QString escapedDomain = QRegularExpression::escape(domain);
+        QRegularExpression re(
+            QString(R"((?:https?:)?\/\/(?:cdn\.)?%1\/webplayer(?:2)?\.php[^"'\\s]*)")
+                .arg(escapedDomain),
+            QRegularExpression::CaseInsensitiveOption
+        );
+
         QRegularExpressionMatchIterator it = re.globalMatch(html);
 
         QStringList results;
-        while (it.hasNext()) {
+        while (it.hasNext())
             results << it.next().captured(0);
-        }
+
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv872.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowser->setHtml(
+                QString(
+                    "<p>Ссылок <code>%1/webplayer.php</code> и "
+                    "<code>webplayer2.php</code> не найдено.</p>"
+                ).arg(domain)
+            );
         } else {
             QString htmlOutput;
-            for (const QString &link : results) {
-                QString fullUrl = link.startsWith("http") ? link : "https://" + link;
-                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
+            for (QString link : results) {
+                if (link.startsWith("//"))
+                    link.prepend("https:");
+                else if (!link.startsWith("http"))
+                    link.prepend("https://");
+
+                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(link);
             }
             ui->textBrowser->setHtml(htmlOutput);
         }
     });
 }
+
+
+QString MainWindow::readLivetvDomainFromConfig()
+{
+    const QString configFilePath =
+        QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+        + "/.livetv/config.txt";
+
+    QFile configFile(configFilePath);
+
+    if (!configFile.exists()) {
+        qWarning() << "Файл конфигурации не найден:" << configFilePath;
+        return QString();
+    }
+
+    if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть файл конфигурации:" << configFilePath;
+        return QString();
+    }
+
+    QTextStream in(&configFile);
+    QString line = in.readLine().trimmed();   // берём первую строку
+    configFile.close();
+
+    if (line.isEmpty())
+        return QString();
+
+    // Убираем протокол (http:// или https://)
+    line.remove(QRegularExpression(R"(^https?://)", QRegularExpression::CaseInsensitiveOption));
+
+    // Убираем всё после первого слэша (на случай путей)
+    int slashPos = line.indexOf('/');
+    if (slashPos != -1)
+        line = line.left(slashPos);
+
+    return line;
+}
+
+
 
 
 //функция получения m3u8 ссылок
 void MainWindow::on_geturlpushButton_clicked()
 {
-
     if (currentUrl.isEmpty()) {
         ui->textBrowser->setHtml("<p><b>URL пустой!</b></p>");
         return;
     }
 
-    QNetworkRequest request{QUrl(currentUrl)};
-    QNetworkReply *reply = manager->get(request);
+    // Берём домен ТОЛЬКО из config.txt
+    QString domain = readLivetvDomainFromConfig();
+    if (domain.isEmpty()) {
+        ui->textBrowser->setHtml(
+            "<p><b>Домен не задан в ~/.livetv/config.txt</b></p>"
+        );
+        return;
+    }
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    QNetworkReply *reply = manager->get(QNetworkRequest(QUrl(currentUrl)));
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, domain]() {
         if (reply->error() != QNetworkReply::NoError) {
-            ui->textBrowser->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
+            ui->textBrowser->setHtml(
+                QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString())
+            );
             reply->deleteLater();
             return;
         }
 
-        QString html = reply->readAll();
+        QString html = QString::fromUtf8(reply->readAll());
         reply->deleteLater();
 
-        // Регулярное выражение для поиска ссылок webplayer и webplayer2
-        QRegularExpression re(R"(cdn\.livetv872\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        // Ищем webplayer / webplayer2 для домена из конфига
+        QString escapedDomain = QRegularExpression::escape(domain);
+        QRegularExpression re(
+            QString(R"((?:https?:)?\/\/(?:cdn\.)?%1\/webplayer(?:2)?\.php[^"'\\s]*)")
+                .arg(escapedDomain),
+            QRegularExpression::CaseInsensitiveOption
+        );
+
         QRegularExpressionMatchIterator it = re.globalMatch(html);
 
         QStringList results;
-        while (it.hasNext()) {
+        while (it.hasNext())
             results << it.next().captured(0);
-        }
+
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textBrowser->setHtml("<p>Ссылок <code>cdn.livetv872.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowser->setHtml(
+                QString(
+                    "<p>Ссылок <code>%1/webplayer.php</code> и "
+                    "<code>webplayer2.php</code> не найдено.</p>"
+                ).arg(domain)
+            );
         } else {
             QString htmlOutput;
-            for (const QString &link : results) {
-                QString fullUrl = link.startsWith("http") ? link : "https://" + link;
-                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
+            for (QString link : results) {
+                if (link.startsWith("//"))
+                    link.prepend("https:");
+                else if (!link.startsWith("http"))
+                    link.prepend("https://");
+
+                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(link);
             }
             ui->textBrowser->setHtml(htmlOutput);
         }
     });
-
 }
+
+
 
 //функция получения m3u8 ссылок через ссылки в поле тектсбраузера
 void MainWindow::geturlpushButton(const QUrl &currentUrl)
 {
-    qDebug() << "Навели на ссылку:" << currentUrl.toString(); // Используем toString(), чтобы получить строку
+    qDebug() << "Навели на ссылку:" << currentUrl.toString();
+
     if (currentUrl.isEmpty()) {
         ui->textBrowserEvents->setHtml("<p><b>URL пустой!</b></p>");
         return;
     }
 
-    QNetworkRequest request{QUrl(currentUrl)};
-    QNetworkReply *reply = manager->get(request);
+    QString host = readLivetvDomainFromConfig();
+    if (host.isEmpty()) {
+        ui->textBrowserEvents->setHtml(
+            "<p><b>Домен не задан в ~/.livetv/config.txt</b></p>"
+        );
+        return;
+    }
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    QNetworkReply *reply = manager->get(QNetworkRequest(currentUrl));
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, host]() {
         if (reply->error() != QNetworkReply::NoError) {
-            ui->textBrowserEvents->setHtml(QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString()));
+            ui->textBrowserEvents->setHtml(
+                QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString())
+            );
             reply->deleteLater();
             return;
         }
 
-        QString html = reply->readAll();
+        QString html = QString::fromUtf8(reply->readAll());
         reply->deleteLater();
 
-        // Регулярное выражение для поиска ссылок webplayer и webplayer2
-        QRegularExpression re(R"(cdn\.livetv872\.me\/webplayer(?:2)?\.php[^"\s]*)");
+        QString escapedHost = QRegularExpression::escape("cdn." + host);
+        QRegularExpression re(
+            QString(R"(%1\/webplayer(?:2)?\.php[^"'\\s]*)").arg(escapedHost),
+            QRegularExpression::CaseInsensitiveOption
+        );
+
         QRegularExpressionMatchIterator it = re.globalMatch(html);
 
         QStringList results;
-        while (it.hasNext()) {
+        while (it.hasNext())
             results << it.next().captured(0);
-        }
+
         results.removeDuplicates();
 
         if (results.isEmpty()) {
-            ui->textBrowserEvents->setHtml("<p>Ссылок <code>cdn.livetv872.me/webplayer.php</code> и <code>webplayer2.php</code> не найдено.</p>");
+            ui->textBrowserEvents->setHtml(
+                QString(
+                    "<p>Ссылок <code>cdn.%1/webplayer.php</code> и "
+                    "<code>webplayer2.php</code> не найдено.</p>"
+                ).arg(host)
+            );
         } else {
             QString htmlOutput;
-            for (const QString &link : results) {
-                QString fullUrl = link.startsWith("http") ? link : "https://" + link;
-                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(fullUrl);
+            for (QString link : results) {
+                if (link.startsWith("//"))
+                    link.prepend("https:");
+                else if (!link.startsWith("http"))
+                    link.prepend("https://");
+
+                htmlOutput += QString("<p><a href=\"%1\">🔗 %1</a></p>").arg(link);
             }
             ui->textBrowserEvents->setHtml(htmlOutput);
         }
     });
-
 }
+
+
 
 // Объявление общей функции processEvents
 void MainWindow::processEvents(const QString &tournamentName, int pageNumber)
