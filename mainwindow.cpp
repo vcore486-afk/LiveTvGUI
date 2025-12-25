@@ -175,15 +175,23 @@ void MainWindow::callPythonScript(const QString &resourcePath) {
     QString fileName = QFileInfo(resourcePath).fileName();
     QString filePath = dirPath + "/" + fileName;
 
-    // Сохранение скрипта на диск
+    // Проверка, существует ли файл
     QFile file(filePath);
+    if (file.exists()) {
+        std::cout << "File already exists, skipping overwrite: " << filePath.toStdString() << std::endl;
+        return; // Если файл существует, выходим из функции
+    }
+
+    // Сохранение скрипта на диск
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         file.write(scriptContent);
         file.close();
+        std::cout << "Script saved to: " << filePath.toStdString() << std::endl;
     } else {
         std::cerr << "Failed to save script to file: " << filePath.toStdString() << std::endl;
     }
 }
+
 
 
 
