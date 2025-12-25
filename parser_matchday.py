@@ -99,5 +99,12 @@ if __name__ == "__main__":
     parser.add_argument("page_number", type=int, help="Номер страницы для парсинга")
     args = parser.parse_args()
 
+    # Явная очистка файла перед парсингом
+    homePath = os.path.expanduser("~")
+    output_dir = os.path.join(homePath, ".livetv")
+    OUTPUT_FILE = os.path.join(output_dir, "matchday_events.txt")
+    if os.path.exists(OUTPUT_FILE):
+        os.remove(OUTPUT_FILE)
+
     # Запуск парсинга для указанной страницы
     parse_page(args.page_number)
