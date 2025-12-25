@@ -23,7 +23,7 @@ signals:
 private:
     Ui::PlayerWindow *ui;
     QWebEngineView *webView = nullptr;
-
+    QString readRefererUrlFromConfig();  // Объявление функции для чтения URL из конфигурации
     bool m_mpvLaunched = false;   // защита от повторного запуска mpv
 };
 

@@ -72,7 +72,7 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         if (m_mpvLaunched || !url.contains(".m3u8")) return;
         m_mpvLaunched = true;
 
-          // Отправляем сигнал с захваченным URL
+        // Отправляем сигнал с захваченным URL
         emit urlCaptured(url); // посылаем URL назад в MainWindow
 
         qDebug().noquote() << "ЗАПУСКАЕМ MPV →" << url;
@@ -86,8 +86,16 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
             return;
         }
 
+        // Чтение URL из конфигурации
+        QString refererUrl = readRefererUrlFromConfig();
+        if (refererUrl.isEmpty()) {
+            qCritical() << "Не удалось получить URL из конфигурации!";
+            return;
+        }
+
+        // Запуск MPV с динамическим URL
         QProcess::startDetached(mpvPath, QStringList()
-            << "--http-header-fields=Referer: https://livetv872.me/"
+            << "--http-header-fields=Referer: " + refererUrl
             << "--user-agent=Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
             << "--hwdec=auto-safe"
             << "--vo=gpu"
@@ -96,7 +104,7 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
             << "--no-terminal"
             << "--really-quiet"
             << "--title=LiveTV • NHL"
-            << url
+            << url  // Прежний URL потока
         );
 
         qDebug() << "mpv запущен!";
@@ -109,7 +117,7 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         r.toggleOn() ? showFullScreen() : showNormal();
     });
 
-    connect(page, &QWebEnginePage::loadFinished, this, [](bool ok) {
+    connect(page, &QWebEnginePage::loadFinished, this, [this](bool ok) {
         qDebug() << (ok ? "Страница загружена — ждём поток..." : "Ошибка загрузки");
     });
 
@@ -117,10 +125,39 @@ PlayerWindow::PlayerWindow(const QUrl &url, QWidget *parent)
         qDebug() << "Загружаем:" << url.toString();
         webView->load(url);
     }
-setAttribute(Qt::WA_DontShowOnScreen);
-hide();
 
+    setAttribute(Qt::WA_DontShowOnScreen);
+    hide();
 }
+
+QString PlayerWindow::readRefererUrlFromConfig()
+{
+    QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.livetv/config.txt";
+    QFile configFile(configFilePath);
+
+    if (!configFile.exists()) {
+        qWarning() << "Конфигурационный файл не найден:" << configFilePath;
+        return QString();
+    }
+
+    if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Не удалось открыть конфигурационный файл:" << configFilePath;
+        return QString();
+    }
+
+    QTextStream in(&configFile);
+    QString line;
+    while (in.readLineInto(&line)) {
+        // Ищем строку, которая содержит URL
+        if (line.startsWith("referer_url=")) {
+            return line.mid(QString("referer_url=").length()).trimmed(); // Извлекаем сам URL
+        }
+    }
+
+    qWarning() << "Не найдено значение referer_url в конфигурации.";
+    return QString();
+}
+
 
 PlayerWindow::~PlayerWindow()
 {
