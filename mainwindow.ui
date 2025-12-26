@@ -110,7 +110,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>upload m3u8</string>
+     <string>Play</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_2">
@@ -238,19 +238,6 @@
     </property>
     <property name="text">
      <string>Главные матчи баскетбол</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="reloadPvtiptvsimple">
-    <property name="geometry">
-     <rect>
-      <x>870</x>
-      <y>110</y>
-      <width>191</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Play channel</string>
     </property>
    </widget>
   </widget>

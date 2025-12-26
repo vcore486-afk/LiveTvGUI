@@ -55,7 +55,7 @@ private slots:
 
     void on_parsebasketball_clicked();
 
-    void on_reloadPvtiptvsimple_clicked();
+
 
   
 
