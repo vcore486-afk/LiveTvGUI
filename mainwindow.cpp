@@ -15,6 +15,17 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QHelpEvent>
+#include <QFile>
+#include <QTextStream>
+#include <QProcess>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTimer>
+#include <QJsonArray>
+#include <functional>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -127,31 +138,173 @@ void MainWindow::onLinkHovered(const QString &link)
     }
 }
 
+void MainWindow::sendJsonRpc(
+    const QJsonObject &json,
+    const QString &desc,
+    std::function<void(const QJsonObject&)> onSuccess)
+{
+    QNetworkRequest request(QUrl("http://192.168.8.45:8081/jsonrpc"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QNetworkReply *reply = manager->post(
+        request,
+        QJsonDocument(json).toJson()
+        );
+
+    connect(reply, &QNetworkReply::finished, this, [=]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            qWarning() << desc << "failed:" << reply->errorString();
+            reply->deleteLater();
+            return;
+        }
+
+        QJsonObject response =
+            QJsonDocument::fromJson(reply->readAll()).object();
+
+        qDebug() << desc << "OK";
+
+        if (onSuccess)
+            onSuccess(response);
+
+        reply->deleteLater();
+    });
+}
 
 void MainWindow::on_playurl_clicked()
 {
-  QString input = ui->urlField->text();
+    QString input = ui->urlField->text();
+    QString filePath = "/tmp/list.m3u";
 
-    
+    // 1️⃣ Создаём M3U
+    QFile file(filePath);
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qCritical() << "Cannot create M3U file";
+        return;
+    }
+    QTextStream(&file)
+        << "#EXTM3U\n"
+        << "#EXTINF:-1,My Channel Name\n"
+        << input << "\n";
+    file.close();
+    qDebug() << "Temporary M3U created at" << filePath;
 
-    QProcess process;
+    // 2️⃣ Останавливаем плеер
+    QJsonObject stop;
+    stop["jsonrpc"] = "2.0";
+    stop["method"] = "Player.Stop";
+    stop["params"] = QJsonObject{{"playerid", 1}};
+    stop["id"] = rpcId++;
+    sendJsonRpc(stop, "Player.Stop", [=](const QJsonObject &)
+    {
+        // 3️⃣ Копируем M3U на веб-сервер через SCP
+        QProcess *scp = new QProcess(this);
+        connect(scp, &QProcess::finished, this, [=]()
+        {
+            // 4️⃣ Включаем PVR аддон
+            QJsonObject enable;
+            enable["jsonrpc"] = "2.0";
+            enable["method"] = "Addons.SetAddonEnabled";
+            enable["params"] = QJsonObject{{"addonid","pvr.iptvsimple"}, {"enabled", true}};
+            enable["id"] = rpcId++;
+            sendJsonRpc(enable, "Enable PVR", [=](const QJsonObject &)
+            {
+                // 5️⃣ Запускаем PVR scan
+                QJsonObject scan;
+                scan["jsonrpc"] = "2.0";
+                scan["method"] = "PVR.Scan";
+                scan["id"] = rpcId++;
+                sendJsonRpc(scan, "PVR scan");
 
-    QStringList arguments;
+                // 6️⃣ Ждём появления каналов с лимитом 3 попытки
+                auto waitForChannels = std::make_shared<std::function<void(int)>>();
 
-    arguments << input;
+                *waitForChannels = [=](int attemptsLeft)
+                {
+                    QJsonObject getGroups;
+                    getGroups["jsonrpc"] = "2.0";
+                    getGroups["method"] = "PVR.GetChannelGroups";
+                    getGroups["id"] = rpcId++;
 
-    QStringList anotherList = {input};
+                    sendJsonRpc(getGroups, "Get Channel Groups", [=](const QJsonObject &resp)
+                    {
+                        QJsonArray groups = resp["result"].toObject()["channelgroups"].toArray();
 
-    QString program = "echoplaylist";
+                        if(!groups.isEmpty())
+                        {
+                            QString channelGroupId = groups.first().toObject()["channelgroupid"].toString();
 
-    process.setProgram(program);
+                            QJsonObject getChannels;
+                            getChannels["jsonrpc"] = "2.0";
+                            getChannels["method"] = "PVR.GetChannels";
+                            getChannels["params"] = QJsonObject{
+                                {"channelgroupid", channelGroupId},
+                                {"properties", QJsonArray{"channelnumber","label"}}
+                            };
+                            getChannels["id"] = rpcId++;
 
-    process.setArguments(anotherList);
+                            sendJsonRpc(getChannels, "Get Channels", [=](const QJsonObject &resp)
+                            {
+                                QJsonArray channels = resp["result"].toObject()["channels"].toArray();
+                                if(channels.isEmpty() && attemptsLeft > 1)
+                                {
+                                    qDebug() << "No channels yet, retrying...";
+                                    QTimer::singleShot(1000, this, [waitForChannels, attemptsLeft]()
+                                    {
+                                        (*waitForChannels)(attemptsLeft - 1);
+                                    });
+                                    return;
+                                }
 
-    process.start();
+                                // 🔹 Открываем первый канал (если пусто, используем M3U напрямую)
+                                int channelId = 1; // дефолт для Player.Open
+                                if(!channels.isEmpty()) {
+                                    channelId = channels.first().toObject()["channelid"].toInt();
+                                    qDebug() << "Opening first PVR channel:" << channels.first().toObject()["label"].toString();
+                                } else {
+                                    qDebug() << "No PVR channels found, opening default first channel from M3U";
+                                }
 
-    process.waitForFinished();
-}
+                                QJsonObject play;
+                                play["jsonrpc"] = "2.0";
+                                play["method"] = "Player.Open";
+                                play["params"] = QJsonObject{{"item", QJsonObject{{"channelid", channelId}}}};
+                                play["id"] = rpcId++;
+                                sendJsonRpc(play, "Player.Open");
+                            });
+                        }
+                        else
+                        {
+                            if(attemptsLeft > 1)
+                            {
+                                qDebug() << "No channel groups yet, retrying...";
+                                QTimer::singleShot(1000, this, [waitForChannels, attemptsLeft]()
+                                {
+                                    (*waitForChannels)(attemptsLeft - 1);
+                                });
+                                return;
+                            }
+
+                            // После 3 попыток — открываем первый канал из M3U
+                            qDebug() << "No channel groups after 3 attempts, opening default first channel from M3U";
+                            QJsonObject play;
+                            play["jsonrpc"] = "2.0";
+                            play["method"] = "Player.Open";
+                            play["params"] = QJsonObject{{"item", QJsonObject{{"channelid", 1}}}};
+                            play["id"] = rpcId++;
+                            sendJsonRpc(play, "Player.Open");
+                        }
+                    });
+                };
+
+                // Запуск ожидания каналов: 3 попытки
+                (*waitForChannels)(3);
+            }); // end sendJsonRpc Enable PVR
+        }); // end connect scp finished
+
+        scp->start("sshpass", {"-p", "639639", "scp", filePath, "pi@192.168.8.45:/var/www/html"});
+    }); // end sendJsonRpc Player.Stop
+} // end on_playurl_clicked
+
 
 void MainWindow::callPythonScript(const QString &resourcePath) {
     // Загрузка Python-скрипта из ресурсов

@@ -58,8 +58,16 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QString currentUrl;
-    QNetworkAccessManager *manager;  // <-- поле класса
+
     QString readLivetvDomainFromConfig();  // ← добавьте сюда
+    QNetworkAccessManager *manager;
+    int rpcId = 1;
+
+    void sendJsonRpc(
+        const QJsonObject &json,
+        const QString &desc,
+        std::function<void(const QJsonObject&)> onSuccess = nullptr
+    );
 
 };
 
