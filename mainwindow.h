@@ -55,6 +55,10 @@ private slots:
 
     void on_parsebasketball_clicked();
 
+    void on_reloadPvtiptvsimple_clicked();
+
+  
+
 private:
     Ui::MainWindow *ui;
     QString currentUrl;
