@@ -1,4 +1,4 @@
-QT       += core gui widgets webenginewidgets webenginecore
+QT       += core gui widgets webenginewidgets webenginecore  concurrent
 
 CONFIG   += c++17
 
@@ -28,3 +28,6 @@ LIBS += -L/usr/local/lib/python3.11-config/lib  # замените x на ном
 LIBS += -lpython3.11                     # замените x на номер вашей версии Python
 
 RESOURCES += resources.qrc
+
+LIBS += -L/usr/local/lib -lssh2
+INCLUDEPATH += /usr/local/include
