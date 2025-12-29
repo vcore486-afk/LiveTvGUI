@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <QPointer>
 #include <QtConcurrent/QtConcurrent>
+#include <QNetworkProxy>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -640,6 +641,7 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
         return;
     }
 
+    // Читаем домен из конфигурации
     QString host = readLivetvDomainFromConfig();
     if (host.isEmpty()) {
         ui->textBrowserEvents->setHtml(
@@ -648,9 +650,20 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
         return;
     }
 
+    // Устанавливаем прокси динамически
+    QNetworkProxy proxy = readProxyFromConfig();  // Читаем прокси из конфигурации
+    if (proxy.type() != QNetworkProxy::NoProxy) {
+        manager->setProxy(proxy);  // Устанавливаем прокси, если оно задано
+        qDebug() << "Используем прокси для запроса: " << proxy.hostName() << ":" << proxy.port();
+    } else {
+        qDebug() << "Прокси не используется.";
+    }
+
+    // Отправка запроса
     QNetworkReply *reply = manager->get(QNetworkRequest(currentUrl));
 
     connect(reply, &QNetworkReply::finished, this, [this, reply, host]() {
+        // Проверка на ошибки при загрузке
         if (reply->error() != QNetworkReply::NoError) {
             ui->textBrowserEvents->setHtml(
                 QString("<p><b>Ошибка загрузки:</b> %1</p>").arg(reply->errorString())
@@ -659,24 +672,31 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
             return;
         }
 
+        // Получаем HTML-страницу
         QString html = QString::fromUtf8(reply->readAll());
         reply->deleteLater();
 
+        qDebug() << "HTML загружен, размер контента: " << html.size() << " байт.";
+
+        // Формируем регулярное выражение для поиска ссылок
         QString escapedHost = QRegularExpression::escape("cdn." + host);
         QRegularExpression re(
             QString(R"(%1\/webplayer(?:2)?\.php[^"'\\s]*)").arg(escapedHost),
             QRegularExpression::CaseInsensitiveOption
         );
 
-        QRegularExpressionMatchIterator it = re.globalMatch(html);
+        qDebug() << "Используем регулярное выражение: " << re.pattern();
 
+        // Ищем все совпадения по регулярному выражению
         QStringList results;
+        QRegularExpressionMatchIterator it = re.globalMatch(html);
         while (it.hasNext())
             results << it.next().captured(0);
 
-        results.removeDuplicates();
+        results.removeDuplicates();  // Убираем дубли
 
         if (results.isEmpty()) {
+            qDebug() << "Не найдено ссылок на веб-плееры.";
             ui->textBrowserEvents->setHtml(
                 QString(
                     "<p>Ссылок <code>cdn.%1/webplayer.php</code> и "
@@ -684,6 +704,7 @@ void MainWindow::geturlpushButton(const QUrl &currentUrl)
                 ).arg(host)
             );
         } else {
+            qDebug() << "Найдено ссылок: " << results.size();
             QString htmlOutput;
             for (QString link : results) {
                 if (link.startsWith("//"))
@@ -748,6 +769,36 @@ void MainWindow::processEvents(const QString &tournamentName, int pageNumber)
     // Установка сформированного HTML в textBrowser
     ui->textBrowser->setHtml(htmlContent);
 }
+
+
+QNetworkProxy MainWindow::readProxyFromConfig() {
+    QFile file(QDir::homePath() + "/.livetv/proxy.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return QNetworkProxy::NoProxy;
+
+    QTextStream in(&file);
+    QString host, typeStr, user, password;
+    quint16 port = 0;
+
+    // Чтение параметров из конфигурационного файла
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.startsWith("host=")) host = line.mid(5);
+        else if (line.startsWith("port=")) port = line.mid(5).toUShort();
+        else if (line.startsWith("type=")) typeStr = line.mid(5).toLower();
+        else if (line.startsWith("user=")) user = line.mid(5);
+        else if (line.startsWith("password=")) password = line.mid(9);
+    }
+
+    // Если не указан host или port, прокси не используется
+    if (host.isEmpty() || port == 0)
+        return QNetworkProxy::NoProxy;
+
+    // Прокси типа HTTP (для HTTPS-запросов также)
+    QNetworkProxy proxy(QNetworkProxy::HttpProxy, host, port, user, password);
+    return proxy;
+}
+
 
 
 //парсер страницы для получения событий лиги чемпионов

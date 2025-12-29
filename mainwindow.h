@@ -19,6 +19,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void callPythonScript(const QString &resourcePath);
+    QNetworkProxy readProxyFromConfig();
 
 private slots:
 
