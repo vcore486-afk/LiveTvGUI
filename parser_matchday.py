@@ -23,6 +23,7 @@ def read_base_domain():
 BASE_DOMAIN = read_base_domain()
 
 # Функция для парсинга и сохранения данных
+# Функция для парсинга и сохранения данных через прокси
 def parse_page(page_number):
     # URL страницы для парсинга с учетом номера страницы
     URL = f"{BASE_DOMAIN}/allupcomingsports/{page_number}/"
@@ -34,9 +35,15 @@ def parse_page(page_number):
 
     OUTPUT_FILE = os.path.join(output_dir, "matchday_events.txt")  # Всегда одно имя файла
 
+    # Настройка прокси
+    proxies = {
+        "http": "http://127.0.0.1:18080",
+        "https": "http://127.0.0.1:18080",
+    }
+
     # 1. Загружаем страницу
     try:
-        response = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
+        response = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"}, proxies=proxies)
         response.raise_for_status()
         html_content = response.text
     except requests.RequestException as e:
