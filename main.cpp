@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "pythonmanager.h"  // ← обязательно!
 #include <QApplication>
+#include <QScreen>
 
 int main(int argc, char *argv[])
 {
