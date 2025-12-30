@@ -64,7 +64,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QString currentUrl;
-
+    QNetworkAccessManager* managerDirect = nullptr;
     QString readLivetvDomainFromConfig();  // ← добавьте сюда
     QNetworkAccessManager *manager;
     int rpcId = 1;

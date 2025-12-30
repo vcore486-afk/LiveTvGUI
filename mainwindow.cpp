@@ -51,6 +51,8 @@ ui->textBrowserEvents->setOpenExternalLinks(false);
     ui->textBrowser->setOpenLinks(false);
   connect(ui->textBrowser, &QTextBrowser::anchorClicked, this, &MainWindow::geturlpushButton);
   connect(ui->textBrowserEvents, &QTextBrowser::anchorClicked, this, &MainWindow::onLinkClicked);
+    managerDirect = new QNetworkAccessManager(this);
+    managerDirect->setProxy(QNetworkProxy::NoProxy);
 }
 
 MainWindow::~MainWindow()
@@ -157,10 +159,10 @@ void MainWindow::sendJsonRpc(
     QNetworkRequest request(QUrl("http://192.168.8.45:8081/jsonrpc"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    QNetworkReply *reply = manager->post(
+    QNetworkReply *reply = managerDirect->post(
         request,
-        QJsonDocument(json).toJson()
-        );
+        QJsonDocument(json).toJson(QJsonDocument::Compact)
+    );
 
     connect(reply, &QNetworkReply::finished, this, [=]() {
         if (reply->error() != QNetworkReply::NoError) {
@@ -169,7 +171,7 @@ void MainWindow::sendJsonRpc(
             return;
         }
 
-        QJsonObject response =
+        const QJsonObject response =
             QJsonDocument::fromJson(reply->readAll()).object();
 
         qDebug() << desc << "OK";
@@ -180,6 +182,7 @@ void MainWindow::sendJsonRpc(
         reply->deleteLater();
     });
 }
+
 
 void MainWindow::on_playurl_clicked()
 {
