@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
     QPoint(w.width() / 2, w.height() / 2);
     w.move(centerPosition);  // перемещаем окно в центр экрана
     w.callPythonScript(":/config.txt");
+    w.callPythonScript(":/proxy.txt");
     w.show();
     return a.exec();
 }
