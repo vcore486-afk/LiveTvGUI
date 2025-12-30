@@ -5,5 +5,6 @@
     <file>find_events.py</file>
     <file>parser_matchday.py</file>
     <file>config.txt</file>
+    <file>proxy.txt</file>
   </qresource>
 </RCC>

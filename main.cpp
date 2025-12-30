@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
     PythonManager::instance();
     MainWindow w;
     w.callPythonScript(":/config.txt");
+    w.callPythonScript(":/proxy.txt");
     w.show();
     return a.exec();
 }
