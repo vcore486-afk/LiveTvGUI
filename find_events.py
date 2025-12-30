@@ -22,11 +22,59 @@ def read_base_domain():
         print(f"Error reading config file: {e}")
         raise
 
-# Чтение BASE_DOMAIN из файла config.txt
+# Чтение BASE_DOMAIN
 BASE_DOMAIN = read_base_domain()
 
+# ---------- ПРОКСИ ----------
+def read_proxy_config():
+    proxy_path = Path.home() / ".livetv" / "proxy.txt"
+    if not proxy_path.exists():
+        return None
+
+    data = {}
+    with proxy_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            data[k.strip()] = v.strip()
+
+    if not data.get("host") or not data.get("port"):
+        return None
+
+    return data
+
+
+def build_proxies():
+    cfg = read_proxy_config()
+    if not cfg:
+        return None
+
+    proto = cfg.get("type", "http")
+    host = cfg["host"]
+    port = cfg["port"]
+    user = cfg.get("user")
+    password = cfg.get("password")
+
+    if user and password:
+        proxy_url = f"{proto}://{user}:{password}@{host}:{port}"
+    else:
+        proxy_url = f"{proto}://{host}:{port}"
+
+    return {
+        "http": proxy_url,
+        "https": proxy_url,
+    }
+# ---------------------------
+
+
 def find_related_events(url, tournament_name, session=None, timeout=10):
-    session = session or requests.Session()
+    if session is None:
+        session = requests.Session()
+        proxies = build_proxies()
+        if proxies:
+            session.proxies.update(proxies)
 
     try:
         resp = session.get(url, timeout=timeout)
@@ -67,11 +115,9 @@ def find_related_events(url, tournament_name, session=None, timeout=10):
         full_href = urljoin(BASE_DOMAIN, href)
         title = link.get_text(strip=True) or link.get("title") or full_href
 
-        # Получаем время из <span class="evdesc">
         time_span = link.find_next("span", class_="evdesc")
         event_time = time_span.get_text(" ", strip=True) if time_span else ""
 
-        # Добавляем время к названию через табуляцию
         title_with_time = f"{title}\t{event_time}" if event_time else title
 
         if (title_with_time, full_href) not in seen:
@@ -99,7 +145,6 @@ def main(raw):
     'НХЛ|2'
     Qt НЕ передаёт второй аргумент!
     """
-
     try:
         tournament, page = raw.split("|", 1)
     except ValueError:
